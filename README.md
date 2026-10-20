@@ -91,6 +91,7 @@ flutter run                     # choisir un émulateur / appareil
 | [MOBILE.md](docs/MOBILE.md) | Architecture de l'app Flutter, navigation, state management. |
 | [SETUP.md](docs/SETUP.md) | Installation de l'environnement de développement. |
 | [ROADMAP.md](docs/ROADMAP.md) | Phases de livraison et évolutions futures. |
+| [TEAM.md](docs/TEAM.md) | Répartition du travail entre les 6 développeurs (1 module / personne). |
 | [CONTRIBUTING.md](docs/CONTRIBUTING.md) | Conventions de code, branches, commits, PR. |
 
 ## 👥 Rôles utilisateurs
