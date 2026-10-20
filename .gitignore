@@ -1,0 +1,45 @@
+# ─── OS / Éditeurs ───────────────────────────────
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+*.iml
+
+# ─── Backend : Java / Spring Boot / Maven ────────
+backend/target/
+backend/.mvn/wrapper/maven-wrapper.jar
+backend/!**/src/main/**/target/
+backend/!**/src/test/**/target/
+*.class
+*.log
+hs_err_pid*
+
+# ─── Mobile : Flutter / Dart ─────────────────────
+mobile/.dart_tool/
+mobile/.flutter-plugins
+mobile/.flutter-plugins-dependencies
+mobile/.packages
+mobile/build/
+mobile/.pub-cache/
+mobile/.pub/
+mobile/ios/Pods/
+mobile/ios/.symlinks/
+mobile/android/.gradle/
+mobile/android/local.properties
+mobile/android/key.properties
+mobile/*.g.dart.lock
+coverage/
+
+# ─── Secrets / Environnement ─────────────────────
+.env
+.env.local
+*.local
+application-local.yml
+application-secrets.yml
+*.keystore
+*.jks
+
+# ─── Divers ──────────────────────────────────────
+node_modules/
+tmp/

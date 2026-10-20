@@ -1,0 +1,15 @@
+# Profil de test : MongoDB embarquée (de.flapdoodle), pas de seed.
+de:
+  flapdoodle:
+    mongodb:
+      embedded:
+        version: 7.0.5
+
+petcare:
+  seed:
+    enabled: false
+  security:
+    jwt:
+      secret: test-secret-test-secret-test-secret-test-secret-test-secret-123456
+      access-token-expiration-ms: 900000
+      refresh-token-expiration-ms: 604800000
