@@ -41,6 +41,6 @@ public class AgendaItem extends AuditableDocument {
     @Builder.Default
     private AgendaItemStatus status = AgendaItemStatus.SCHEDULED;
 
-    /** Règle de récurrence optionnelle, ex. EVERY_3_MONTHS. */
-    private String recurrence;
+    /** Règle de récurrence optionnelle (ex. EVERY_3_MONTHS). */
+    private AgendaItemRecurrence recurrence;
 }

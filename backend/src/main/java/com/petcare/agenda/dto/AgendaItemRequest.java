@@ -1,5 +1,6 @@
 package com.petcare.agenda.dto;
 
+import com.petcare.agenda.domain.AgendaItemRecurrence;
 import com.petcare.agenda.domain.AgendaItemType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -13,6 +14,6 @@ public record AgendaItemRequest(
         String notes,
         @NotNull Instant scheduledAt,
         Instant reminderAt,
-        String recurrence
+        AgendaItemRecurrence recurrence
 ) {
 }

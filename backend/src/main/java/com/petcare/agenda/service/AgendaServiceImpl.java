@@ -67,7 +67,13 @@ public class AgendaServiceImpl implements AgendaService {
     public AgendaItemResponse updateStatus(String id, String ownerId, AgendaItemStatus status) {
         AgendaItem item = findOwned(id, ownerId);
         item.setStatus(status);
-        return AgendaItemResponse.from(repository.save(item));
+        AgendaItem saved = repository.save(item);
+
+        // Récurrence : un rappel récurrent marqué « fait » planifie automatiquement le suivant.
+        if (status == AgendaItemStatus.DONE && item.getRecurrence() != null) {
+            createNextOccurrence(item);
+        }
+        return AgendaItemResponse.from(saved);
     }
 
     @Override
@@ -82,5 +88,26 @@ public class AgendaServiceImpl implements AgendaService {
             throw new ForbiddenException("Access denied to agenda item " + id);
         }
         return item;
+    }
+
+    /** Crée la prochaine occurrence d'un rappel récurrent terminé. */
+    private void createNextOccurrence(AgendaItem done) {
+        Instant nextScheduledAt = done.getRecurrence().next(done.getScheduledAt());
+        Instant nextReminderAt = (done.getReminderAt() == null)
+                ? null
+                : done.getRecurrence().next(done.getReminderAt());
+
+        AgendaItem next = AgendaItem.builder()
+                .ownerId(done.getOwnerId())
+                .petId(done.getPetId())
+                .type(done.getType())
+                .title(done.getTitle())
+                .notes(done.getNotes())
+                .scheduledAt(nextScheduledAt)
+                .reminderAt(nextReminderAt)
+                .status(AgendaItemStatus.SCHEDULED)
+                .recurrence(done.getRecurrence())
+                .build();
+        repository.save(next);
     }
 }
