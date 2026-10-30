@@ -35,6 +35,8 @@ public class AgendaServiceImpl implements AgendaService {
                 .ownerId(ownerId).petId(r.petId()).type(r.type()).title(r.title())
                 .notes(r.notes()).scheduledAt(r.scheduledAt()).reminderAt(r.reminderAt())
                 .status(AgendaItemStatus.SCHEDULED).recurrence(r.recurrence())
+                .vetName(r.vetName()).location(r.location())
+                .durationMinutes(r.durationMinutes()).urgent(r.urgent() != null && r.urgent())
                 .build();
         return AgendaItemResponse.from(repository.save(item));
     }
@@ -60,6 +62,10 @@ public class AgendaServiceImpl implements AgendaService {
         item.setScheduledAt(r.scheduledAt());
         item.setReminderAt(r.reminderAt());
         item.setRecurrence(r.recurrence());
+        item.setVetName(r.vetName());
+        item.setLocation(r.location());
+        item.setDurationMinutes(r.durationMinutes());
+        item.setUrgent(r.urgent() != null && r.urgent());
         return AgendaItemResponse.from(repository.save(item));
     }
 
@@ -107,6 +113,10 @@ public class AgendaServiceImpl implements AgendaService {
                 .reminderAt(nextReminderAt)
                 .status(AgendaItemStatus.SCHEDULED)
                 .recurrence(done.getRecurrence())
+                .vetName(done.getVetName())
+                .location(done.getLocation())
+                .durationMinutes(done.getDurationMinutes())
+                .urgent(done.isUrgent())
                 .build();
         repository.save(next);
     }

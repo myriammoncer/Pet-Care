@@ -14,6 +14,10 @@ public record AgendaItemRequest(
         String notes,
         @NotNull Instant scheduledAt,
         Instant reminderAt,
-        AgendaItemRecurrence recurrence
+        AgendaItemRecurrence recurrence,
+        String vetName,
+        String location,
+        Integer durationMinutes,
+        Boolean urgent
 ) {
 }

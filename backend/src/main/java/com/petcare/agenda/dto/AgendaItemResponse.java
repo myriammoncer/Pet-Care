@@ -17,11 +17,16 @@ public record AgendaItemResponse(
         Instant scheduledAt,
         Instant reminderAt,
         AgendaItemStatus status,
-        AgendaItemRecurrence recurrence
+        AgendaItemRecurrence recurrence,
+        String vetName,
+        String location,
+        Integer durationMinutes,
+        boolean urgent
 ) {
     public static AgendaItemResponse from(AgendaItem i) {
         return new AgendaItemResponse(i.getId(), i.getOwnerId(), i.getPetId(), i.getType(),
                 i.getTitle(), i.getNotes(), i.getScheduledAt(), i.getReminderAt(),
-                i.getStatus(), i.getRecurrence());
+                i.getStatus(), i.getRecurrence(),
+                i.getVetName(), i.getLocation(), i.getDurationMinutes(), i.isUrgent());
     }
 }
