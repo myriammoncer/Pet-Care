@@ -6,7 +6,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.repository.MongoRepository;
 
-public interface AgendaItemRepository extends MongoRepository<AgendaItem, String> {
+public interface AgendaItemRepository extends MongoRepository<AgendaItem, String>, AgendaItemRepositoryCustom {
 
     Page<AgendaItem> findByOwnerId(String ownerId, Pageable pageable);
 

@@ -12,10 +12,13 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Pageable;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.Instant;
 
 /**
  * Agenda et rappels de soins (/agenda). Réservé aux propriétaires.
@@ -40,11 +43,15 @@ public class AgendaController {
     }
 
     @GetMapping
-    @Operation(summary = "Lister les éléments d'agenda (filtre optionnel par type)")
+    @Operation(summary = "Lister les éléments d'agenda (filtres : petId, type, période from/to)")
     public ApiResponse<PageResponse<AgendaItemResponse>> list(
-            @RequestParam(required = false) AgendaItemType type, Pageable pageable) {
+            @RequestParam(required = false) String petId,
+            @RequestParam(required = false) AgendaItemType type,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to,
+            Pageable pageable) {
         return ApiResponse.ok(PageResponse.from(
-                agendaService.list(SecurityUtils.currentUserId(), type, pageable)));
+                agendaService.list(SecurityUtils.currentUserId(), petId, type, from, to, pageable)));
     }
 
     @GetMapping("/{id}")

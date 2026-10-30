@@ -13,6 +13,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
+
 @Service
 public class AgendaServiceImpl implements AgendaService {
 
@@ -38,11 +40,10 @@ public class AgendaServiceImpl implements AgendaService {
     }
 
     @Override
-    public Page<AgendaItemResponse> list(String ownerId, AgendaItemType type, Pageable pageable) {
-        Page<AgendaItem> page = (type == null)
-                ? repository.findByOwnerId(ownerId, pageable)
-                : repository.findByOwnerIdAndType(ownerId, type, pageable);
-        return page.map(AgendaItemResponse::from);
+    public Page<AgendaItemResponse> list(String ownerId, String petId, AgendaItemType type,
+                                         Instant from, Instant to, Pageable pageable) {
+        return repository.search(ownerId, petId, type, from, to, pageable)
+                .map(AgendaItemResponse::from);
     }
 
     @Override
