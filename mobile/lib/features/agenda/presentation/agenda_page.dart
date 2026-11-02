@@ -24,6 +24,13 @@ const _typeIcons = {
   'GROOMING': Icons.content_cut,
 };
 
+const _moisFr = [
+  'janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin',
+  'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'
+];
+
+String _frDate(DateTime d) => '${d.day} ${_moisFr[d.month - 1]}';
+
 /// Couleur d'accent selon le type de soin (repris de la maquette).
 Color _typeColor(String type) {
   switch (type) {
@@ -50,6 +57,7 @@ class _AgendaPageState extends ConsumerState<AgendaPage> {
   _View _view = _View.semaine;
   String? _typeFilter; // null = Tous
   DateTime _selectedDay = DateTime.now();
+  bool _calendarSync = true;
 
   /// Les 7 jours (lundi → dimanche) de la semaine du jour sélectionné.
   List<DateTime> get _weekDays {
@@ -72,8 +80,10 @@ class _AgendaPageState extends ConsumerState<AgendaPage> {
           return true;
         case _View.semaine:
           final days = _weekDays;
-          final start = DateTime(days.first.year, days.first.month, days.first.day);
-          final end = DateTime(days.last.year, days.last.month, days.last.day + 1);
+          final start =
+              DateTime(days.first.year, days.first.month, days.first.day);
+          final end =
+              DateTime(days.last.year, days.last.month, days.last.day + 1);
           return !d.isBefore(start) && d.isBefore(end);
         case _View.mois:
           return d.year == _selectedDay.year && d.month == _selectedDay.month;
@@ -117,6 +127,20 @@ class _AgendaPageState extends ConsumerState<AgendaPage> {
         onRetry: () => ref.invalidate(agendaListProvider),
         data: (items) {
           final filtered = _filter(items);
+          final now = DateTime.now();
+          final today = <AgendaItem>[];
+          final upcoming = <AgendaItem>[];
+          final past = <AgendaItem>[];
+          for (final it in filtered) {
+            final d = it.scheduledAt.toLocal();
+            if (_sameDay(d, now)) {
+              today.add(it);
+            } else if (d.isAfter(now)) {
+              upcoming.add(it);
+            } else {
+              past.add(it);
+            }
+          }
           return RefreshIndicator(
             onRefresh: () => ref.read(agendaListProvider.notifier).refresh(),
             child: ListView(
@@ -130,23 +154,60 @@ class _AgendaPageState extends ConsumerState<AgendaPage> {
                 ],
                 _typeChips(),
                 const SizedBox(height: 18),
-                if (filtered.isEmpty)
-                  const Padding(
-                    padding: EdgeInsets.only(top: 40),
-                    child: Center(child: Text('Aucun rappel sur cette période')),
-                  )
-                else
-                  ...filtered.map(
-                    (it) => Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: _AgendaCard(item: it, onValidate: () => _markDone(it)),
-                    ),
-                  ),
+                ..._buildSections(today, upcoming, past),
+                const SizedBox(height: 8),
+                _syncToggleCard(),
               ],
             ),
           );
         },
       ),
+    );
+  }
+
+  /// Construit les sections Aujourd'hui / À venir / Passés (non vides).
+  List<Widget> _buildSections(
+      List<AgendaItem> today, List<AgendaItem> upcoming, List<AgendaItem> past) {
+    final widgets = <Widget>[];
+
+    void addGroup(String title, List<AgendaItem> group) {
+      if (group.isEmpty) return;
+      widgets.add(_sectionHeader(title, group.length));
+      widgets.add(const SizedBox(height: 10));
+      for (final it in group) {
+        widgets.add(Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: _AgendaCard(item: it, onValidate: () => _markDone(it)),
+        ));
+      }
+      widgets.add(const SizedBox(height: 8));
+    }
+
+    addGroup("Aujourd'hui, ${_frDate(DateTime.now())}", today);
+    addGroup('À venir', upcoming);
+    addGroup('Passés', past);
+
+    if (widgets.isEmpty) {
+      widgets.add(const Padding(
+        padding: EdgeInsets.only(top: 40),
+        child: Center(child: Text('Aucun rappel sur cette période')),
+      ));
+    }
+    return widgets;
+  }
+
+  Widget _sectionHeader(String title, int count) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(title,
+            style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                color: AgendaColors.textDark)),
+        Text('$count soin${count > 1 ? 's' : ''}',
+            style: const TextStyle(color: AgendaColors.textMuted, fontSize: 13)),
+      ],
     );
   }
 
@@ -272,6 +333,29 @@ class _AgendaPageState extends ConsumerState<AgendaPage> {
           chip('Rendez-vous', 'VET_APPOINTMENT'),
           chip('Toilettage', 'GROOMING'),
         ],
+      ),
+    );
+  }
+
+  /// Carte « Synchronisation Calendrier » (bas de l'écran).
+  Widget _syncToggleCard() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AgendaColors.border),
+      ),
+      child: SwitchListTile(
+        value: _calendarSync,
+        onChanged: (v) => setState(() => _calendarSync = v),
+        secondary: const Icon(Icons.sync, color: AgendaColors.primary),
+        title: const Text('Synchronisation Calendrier',
+            style: TextStyle(
+                fontWeight: FontWeight.w600, color: AgendaColors.textDark)),
+        subtitle: const Text(
+          'Rappel avant chaque soin pour ne rien oublier.',
+          style: TextStyle(color: AgendaColors.textMuted, fontSize: 12),
+        ),
       ),
     );
   }
