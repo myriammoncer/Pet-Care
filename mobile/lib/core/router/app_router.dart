@@ -14,6 +14,8 @@ import '../../features/pets/presentation/pets_page.dart';
 import '../widgets/home_shell.dart';
 import '../../features/auth/presentation/forgot_password_page.dart';
 import '../../features/auth/presentation/reset_password_page.dart';
+import '../../features/profile/presentation/profile_page.dart';
+import '../../features/profile/presentation/edit_profile_page.dart';
 /// Routeur de l'application (go_router) avec redirection selon l'état
 /// d'authentification. Les routes principales sont regroupées dans un shell
 /// à barre de navigation.
@@ -47,13 +49,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       ShellRoute(
         builder: (context, state, child) => HomeShell(child: child),
         routes: [
+          GoRoute(path: '/profile', builder: (_, __) => const ProfilePage()),
           GoRoute(path: '/pets', builder: (_, __) => const PetsPage()),
           GoRoute(path: '/marketplace', builder: (_, __) => const MarketplacePage()),
           GoRoute(path: '/agenda', builder: (_, __) => const AgendaPage()),
           GoRoute(path: '/events', builder: (_, __) => const EventsPage()),
         ],
       ),
-
+      GoRoute(path: '/profile/edit', builder: (_, __) => const EditProfilePage()),
       // Routes de détail (hors shell).
       GoRoute(
         path: '/pets/:id',
