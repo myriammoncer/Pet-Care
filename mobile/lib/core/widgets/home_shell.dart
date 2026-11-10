@@ -12,6 +12,7 @@ class HomeShell extends StatelessWidget {
     _Tab('/marketplace', Icons.storefront, 'Boutique'),
     _Tab('/agenda', Icons.event, 'Agenda'),
     _Tab('/events', Icons.celebration, 'Événements'),
+    _Tab('/profile', Icons.person, 'Profil'),
   ];
 
   int _indexFor(BuildContext context) {
