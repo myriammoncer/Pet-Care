@@ -133,7 +133,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     ),
                   ],
                 ),
-                // NOTE : le lien « Mot de passe oublié ? » sera ajouté ici en Fonctionnalité 2.
+                TextButton(
+                  onPressed: () => context.push('/forgot-password'),
+                  child: const Text('Mot de passe oublié ?'),
+                ),
               ],
             ),
           ),
