@@ -43,3 +43,6 @@ application-secrets.yml
 # ─── Divers ──────────────────────────────────────
 node_modules/
 tmp/
+
+# ─── Guide privé d'accompagnement (non versionné) ─
+docs/_private/
