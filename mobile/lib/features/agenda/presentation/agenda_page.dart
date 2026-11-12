@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
+import 'package:table_calendar/table_calendar.dart';
 
 import '../../../core/widgets/async_view.dart';
+import '../../pets/domain/pet.dart';
+import '../../pets/presentation/pets_controller.dart';
 import '../domain/agenda_item.dart';
 import 'agenda_colors.dart';
 import 'agenda_controller.dart';
@@ -31,6 +35,16 @@ const _moisFr = [
 
 String _frDate(DateTime d) => '${d.day} ${_moisFr[d.month - 1]}';
 
+/// Libellés français des espèces (codes envoyés par le backend).
+const _speciesFr = {
+  'DOG': 'Chien',
+  'CAT': 'Chat',
+  'BIRD': 'Oiseau',
+  'RABBIT': 'Lapin',
+  'RODENT': 'Rongeur',
+  'REPTILE': 'Reptile',
+  'OTHER': 'Autre',
+};
 /// Couleur d'accent selon le type de soin (repris de la maquette).
 Color _typeColor(String type) {
   switch (type) {
@@ -56,10 +70,20 @@ class AgendaPage extends ConsumerStatefulWidget {
 class _AgendaPageState extends ConsumerState<AgendaPage> {
   _View _view = _View.semaine;
   String? _typeFilter; // null = Tous
+  String? _petFilter; // null = tous les animaux
   DateTime _selectedDay = DateTime.now();
-  bool _calendarSync = true;
+  DateTime _focusedDay = DateTime.now();
+  late bool _calendarSync = ref.read(agendaNotificationsProvider).enabled;
+  bool _frLocaleReady = false;
 
-  /// Les 7 jours (lundi → dimanche) de la semaine du jour sélectionné.
+  @override
+  void initState() {
+    super.initState();
+    // Charge les noms de mois / jours en français pour le calendrier.
+    initializeDateFormatting('fr_FR').then((_) {
+      if (mounted) setState(() => _frLocaleReady = true);
+    });
+  }  /// Les 7 jours (lundi → dimanche) de la semaine du jour sélectionné.
   List<DateTime> get _weekDays {
     final monday =
         _selectedDay.subtract(Duration(days: _selectedDay.weekday - 1));
@@ -69,11 +93,17 @@ class _AgendaPageState extends ConsumerState<AgendaPage> {
 
   bool _sameDay(DateTime a, DateTime b) =>
       a.year == b.year && a.month == b.month && a.day == b.day;
+  /// Vrai si le rappel correspond à l'animal et au type sélectionnés.
+  bool _matchesFilters(AgendaItem it) {
+    if (_petFilter != null && it.petId != _petFilter) return false;
+    if (_typeFilter != null && it.type != _typeFilter) return false;
+    return true;
+  }
 
-  /// Filtre la liste selon le type et la vue (période) sélectionnés.
+  /// Filtre la liste selon l'animal, le type et la vue (période) sélectionnés.
   List<AgendaItem> _filter(List<AgendaItem> items) {
     final result = items.where((it) {
-      if (_typeFilter != null && it.type != _typeFilter) return false;
+      if (!_matchesFilters(it)) return false;
       final d = it.scheduledAt.toLocal();
       switch (_view) {
         case _View.liste:
@@ -86,7 +116,7 @@ class _AgendaPageState extends ConsumerState<AgendaPage> {
               DateTime(days.last.year, days.last.month, days.last.day + 1);
           return !d.isBefore(start) && d.isBefore(end);
         case _View.mois:
-          return d.year == _selectedDay.year && d.month == _selectedDay.month;
+          return _sameDay(d, _selectedDay);
       }
     }).toList();
     result.sort((a, b) => a.scheduledAt.compareTo(b.scheduledAt));
@@ -103,10 +133,44 @@ class _AgendaPageState extends ConsumerState<AgendaPage> {
     }
   }
 
+  /// Annule un rappel après confirmation (statut CANCELLED).
+  Future<void> _cancel(AgendaItem it) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Annuler ce rappel ?'),
+        content: Text('« ${it.title} » sera marqué comme annulé.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Non')),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AgendaColors.danger),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Oui, annuler'),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+    try {
+      await ref
+          .read(agendaListProvider.notifier)
+          .updateStatus(it.id, 'CANCELLED');
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Erreur : $e')));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final agendaAsync = ref.watch(agendaListProvider);
-    return Scaffold(
+    final petsAsync = ref.watch(petsListProvider);
+    final pets = petsAsync.valueOrNull ?? const <Pet>[];
+    final petNames = {for (final p in pets) p.id: p.name};
+    final selectedPet = pets.where((p) => p.id == _petFilter).firstOrNull;    return Scaffold(
       backgroundColor: AgendaColors.scaffoldBg,
       appBar: AppBar(
         backgroundColor: AgendaColors.scaffoldBg,
@@ -146,16 +210,26 @@ class _AgendaPageState extends ConsumerState<AgendaPage> {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 90),
               children: [
+                if (pets.isNotEmpty) ...[
+                  _petChips(pets),
+                  const SizedBox(height: 12),
+                ],
+                if (selectedPet != null) ...[
+                  _petHeader(selectedPet),
+                  const SizedBox(height: 14),
+                ],
                 _viewTabs(),
                 const SizedBox(height: 14),
-                if (_view != _View.liste) ...[
+                if (_view == _View.semaine) ...[
                   _weekStrip(),
+                  const SizedBox(height: 14),
+                ] else if (_view == _View.mois) ...[
+                  _monthCalendar(items),
                   const SizedBox(height: 14),
                 ],
                 _typeChips(),
                 const SizedBox(height: 18),
-                ..._buildSections(today, upcoming, past),
-                const SizedBox(height: 8),
+                ..._buildSections(today, upcoming, past, petNames),                const SizedBox(height: 8),
                 _syncToggleCard(),
               ],
             ),
@@ -166,8 +240,8 @@ class _AgendaPageState extends ConsumerState<AgendaPage> {
   }
 
   /// Construit les sections Aujourd'hui / À venir / Passés (non vides).
-  List<Widget> _buildSections(
-      List<AgendaItem> today, List<AgendaItem> upcoming, List<AgendaItem> past) {
+  List<Widget> _buildSections(List<AgendaItem> today, List<AgendaItem> upcoming,
+      List<AgendaItem> past, Map<String, String> petNames) {
     final widgets = <Widget>[];
 
     void addGroup(String title, List<AgendaItem> group) {
@@ -177,8 +251,12 @@ class _AgendaPageState extends ConsumerState<AgendaPage> {
       for (final it in group) {
         widgets.add(Padding(
           padding: const EdgeInsets.only(bottom: 12),
-          child: _AgendaCard(item: it, onValidate: () => _markDone(it)),
-        ));
+          child: _AgendaCard(
+            item: it,
+            petName: petNames[it.petId],
+            onValidate: () => _markDone(it),
+            onCancel: () => _cancel(it),
+          ),        ));
       }
       widgets.add(const SizedBox(height: 8));
     }
@@ -250,6 +328,54 @@ class _AgendaPageState extends ConsumerState<AgendaPage> {
           tab('Semaine', _View.semaine),
           tab('Liste', _View.liste),
         ],
+      ),
+    );
+  }
+
+  /// Vrai calendrier mensuel (vue Mois).
+  Widget _monthCalendar(List<AgendaItem> items) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AgendaColors.border),
+      ),
+      padding: const EdgeInsets.all(8),
+      child: TableCalendar<AgendaItem>(
+        firstDay: DateTime.utc(2020, 1, 1),
+        lastDay: DateTime.utc(2100, 12, 31),
+        focusedDay: _focusedDay,
+        currentDay: DateTime.now(),
+        locale: _frLocaleReady ? 'fr_FR' : null,
+        startingDayOfWeek: StartingDayOfWeek.monday,
+        availableGestures: AvailableGestures.horizontalSwipe,
+        selectedDayPredicate: (day) => _sameDay(day, _selectedDay),
+        eventLoader: (day) => items
+            .where((it) =>
+        _matchesFilters(it) && _sameDay(it.scheduledAt.toLocal(), day))            .toList(),
+        onDaySelected: (selected, focused) {
+          setState(() {
+            _selectedDay = selected;
+            _focusedDay = focused;
+          });
+        },
+        onPageChanged: (focused) => _focusedDay = focused,
+        headerStyle: const HeaderStyle(
+          formatButtonVisible: false,
+          titleCentered: true,
+          titleTextStyle: TextStyle(
+              fontWeight: FontWeight.bold, color: AgendaColors.textDark),
+        ),
+        calendarStyle: CalendarStyle(
+          selectedDecoration: const BoxDecoration(
+              color: AgendaColors.primary, shape: BoxShape.circle),
+          todayDecoration: BoxDecoration(
+              color: AgendaColors.primary.withValues(alpha: 0.35),
+              shape: BoxShape.circle),
+          markerDecoration: const BoxDecoration(
+              color: AgendaColors.accent, shape: BoxShape.circle),
+          markersMaxCount: 3,
+        ),
       ),
     );
   }
@@ -347,7 +473,10 @@ class _AgendaPageState extends ConsumerState<AgendaPage> {
       ),
       child: SwitchListTile(
         value: _calendarSync,
-        onChanged: (v) => setState(() => _calendarSync = v),
+        onChanged: (v) {
+          setState(() => _calendarSync = v);
+          ref.read(agendaListProvider.notifier).setRemindersEnabled(v);
+        },
         secondary: const Icon(Icons.sync, color: AgendaColors.primary),
         title: const Text('Synchronisation Calendrier',
             style: TextStyle(
@@ -359,21 +488,159 @@ class _AgendaPageState extends ConsumerState<AgendaPage> {
       ),
     );
   }
+  /// Sélecteur d'animal : « Tous » + une puce avec photo par animal.
+  Widget _petChips(List<Pet> pets) {
+    Widget chip({required String label, String? petId, Widget? avatar}) {
+      final selected = _petFilter == petId;
+      return Padding(
+        padding: const EdgeInsets.only(right: 8),
+        child: GestureDetector(
+          onTap: () => setState(() => _petFilter = petId),
+          child: Container(
+            padding: avatar != null
+                ? const EdgeInsets.fromLTRB(4, 4, 14, 4)
+                : const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: selected ? AgendaColors.primary : Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                  color: selected ? AgendaColors.primary : AgendaColors.border),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (avatar != null) ...[
+                  ClipOval(child: avatar),
+                  const SizedBox(width: 8),
+                ],
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: selected ? Colors.white : AgendaColors.textDark,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          chip(label: 'Tous les animaux'),
+          for (final p in pets)
+            chip(label: p.name, petId: p.id, avatar: _petImage(p, 28)),
+        ],
+      ),
+    );
+  }
+
+  /// En-tête présentant l'animal avec sa photo (maquette « Milo »).
+  Widget _petHeader(Pet pet) {
+    final subtitle = [_speciesFr[pet.species] ?? pet.species, pet.breed]
+        .where((e) => e != null && e.isNotEmpty)
+        .join(' · ');
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AgendaColors.border),
+      ),
+      child: Row(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(14),
+            child: _petImage(pet, 54),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(pet.name,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: AgendaColors.textDark)),
+                const SizedBox(height: 2),
+                Text(subtitle,
+                    style: const TextStyle(
+                        color: AgendaColors.textMuted, fontSize: 13)),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: AgendaColors.greenSoftBg,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: const Text('Actif',
+                style: TextStyle(
+                    color: AgendaColors.primary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Photo de l'animal : photoUrl en ligne → asset local → icône (sans erreur).
+  Widget _petImage(Pet pet, double size) {
+    if (pet.photoUrl != null && pet.photoUrl!.isNotEmpty) {
+      return Image.network(
+        pet.photoUrl!,
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _dogFallback(size),
+      );
+    }
+    return _dogFallback(size);
+  }
+
+  Widget _dogFallback(double size) {
+    return Image.asset(
+      'assets/images/dog.jpg',
+      width: size,
+      height: size,
+      fit: BoxFit.cover,
+      errorBuilder: (_, __, ___) => Container(
+        width: size,
+        height: size,
+        color: AgendaColors.greenSoftBg,
+        child: const Icon(Icons.pets, color: AgendaColors.primary),
+      ),
+    );
+  }
 }
 
 /// Carte d'un élément d'agenda (cliquable pour éditer).
 class _AgendaCard extends StatelessWidget {
-  const _AgendaCard({required this.item, this.onValidate});
+  const _AgendaCard(
+      {required this.item, this.petName, this.onValidate, this.onCancel});
   final AgendaItem item;
+  final String? petName;
   final VoidCallback? onValidate;
+  final VoidCallback? onCancel;
 
   @override
   Widget build(BuildContext context) {
     final color = _typeColor(item.type);
     final time = DateFormat('HH:mm').format(item.scheduledAt.toLocal());
-    final subtitle = [item.vetName, item.location, item.notes]
-        .where((e) => e != null && e.isNotEmpty)
-        .join(' · ');
+    final subtitle = [
+      if (petName != null) 'Pour $petName',
+      item.vetName,
+      item.location,
+      item.notes,
+    ].where((e) => e != null && e.isNotEmpty).join(' · ');
     final isScheduled = item.status == 'SCHEDULED';
 
     return GestureDetector(
@@ -445,17 +712,33 @@ class _AgendaCard extends StatelessWidget {
             ),
             if (isScheduled && onValidate != null) ...[
               const SizedBox(height: 10),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AgendaColors.accent,
-                    padding: const EdgeInsets.symmetric(vertical: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AgendaColors.danger,
+                        side: const BorderSide(color: AgendaColors.danger),
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                      ),
+                      onPressed: onCancel,
+                      icon: const Icon(Icons.close, size: 18),
+                      label: const Text('Annuler'),
+                    ),
                   ),
-                  onPressed: onValidate,
-                  icon: const Icon(Icons.check, size: 18),
-                  label: const Text('Valider'),
-                ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: FilledButton.icon(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AgendaColors.accent,
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                      ),
+                      onPressed: onValidate,
+                      icon: const Icon(Icons.check, size: 18),
+                      label: const Text('Valider'),
+                    ),
+                  ),
+                ],
               ),
             ],
           ],

@@ -23,6 +23,15 @@ const _recurrences = {
   'EVERY_YEAR': 'Chaque année',
 };
 
+/// Choix du rappel : minutes avant le soin (null = pas de rappel).
+const _reminderOptions = <int?, String>{
+  null: 'Pas de rappel',
+  0: "À l'heure du soin",
+  15: '15 min avant',
+  60: '1 h avant',
+  1440: '1 jour avant',
+};
+
 /// Formulaire de création (item == null) ou d'édition (item != null).
 class AgendaFormPage extends ConsumerStatefulWidget {
   const AgendaFormPage({super.key, this.item});
@@ -44,6 +53,7 @@ class _AgendaFormPageState extends ConsumerState<AgendaFormPage> {
   String _type = 'VACCINATION';
   String? _recurrence;
   bool _urgent = false;
+  int? _reminderMinutes;
   late DateTime _scheduledAt;
   bool _saving = false;
 
@@ -63,6 +73,12 @@ class _AgendaFormPageState extends ConsumerState<AgendaFormPage> {
     _recurrence = it?.recurrence;
     _urgent = it?.urgent ?? false;
     _scheduledAt = it?.scheduledAt.toLocal() ?? DateTime.now();
+    final reminderAt = it?.reminderAt;
+    _reminderMinutes = it == null
+        ? 15 // nouveau rappel : 15 min avant par défaut
+        : reminderAt == null
+        ? null
+        : it.scheduledAt.difference(reminderAt).inMinutes;
   }
 
   @override
@@ -102,6 +118,12 @@ class _AgendaFormPageState extends ConsumerState<AgendaFormPage> {
       'title': _title.text.trim(),
       'notes': _notes.text.trim().isEmpty ? null : _notes.text.trim(),
       'scheduledAt': _scheduledAt.toUtc().toIso8601String(),
+      'reminderAt': _reminderMinutes == null
+          ? null
+          : _scheduledAt
+          .subtract(Duration(minutes: _reminderMinutes!))
+          .toUtc()
+          .toIso8601String(),
       'recurrence': _recurrence,
       'urgent': _urgent,
       'vetName': _vetName.text.trim().isEmpty ? null : _vetName.text.trim(),
@@ -140,6 +162,12 @@ class _AgendaFormPageState extends ConsumerState<AgendaFormPage> {
   Widget build(BuildContext context) {
     final petsAsync = ref.watch(petsListProvider);
     final dateLabel = DateFormat('dd/MM/yyyy à HH:mm').format(_scheduledAt);
+    // Si un rappel existant a un délai non prévu dans la liste, on l'ajoute.
+    final reminderChoices = <int?, String>{
+      ..._reminderOptions,
+      if (!_reminderOptions.containsKey(_reminderMinutes))
+        _reminderMinutes: '$_reminderMinutes min avant',
+    };
 
     return Scaffold(
       backgroundColor: AgendaColors.scaffoldBg,
@@ -202,6 +230,17 @@ class _AgendaFormPageState extends ConsumerState<AgendaFormPage> {
               subtitle: Text(dateLabel),
               trailing: const Icon(Icons.calendar_today),
               onTap: _pickDateTime,
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<int?>(
+              initialValue: _reminderMinutes,
+              decoration:
+              const InputDecoration(labelText: 'Rappel (notification)'),
+              items: [
+                for (final e in reminderChoices.entries)
+                  DropdownMenuItem<int?>(value: e.key, child: Text(e.value)),
+              ],
+              onChanged: (v) => setState(() => _reminderMinutes = v),
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<String?>(
