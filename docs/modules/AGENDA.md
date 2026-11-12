@@ -9,52 +9,68 @@
 
 ---
 
-## 1. Ce qui existe déjà
+## 1. État actuel du module
 
-### ⚙️ Backend — complet et compile (`com.petcare.agenda`)
+### ⚙️ Backend (`com.petcare.agenda`)
 
 | Fichier | Rôle |
 |---------|------|
-| `domain/AgendaItem.java` | Document MongoDB `agenda_items` : `ownerId`, `petId`, `type`, `title`, `notes`, `scheduledAt`, `reminderAt`, `status`, `recurrence` + audit |
+| `domain/AgendaItem.java` | Document MongoDB `agenda_items` : `ownerId`, `petId`, `type`, `title`, `notes`, `scheduledAt`, `reminderAt`, `status`, `recurrence`, `vetName`, `location`, `durationMinutes`, `urgent` + audit |
 | `domain/AgendaItemType.java` | `VACCINATION`, `DEWORMING`, `MEDICATION`, `VET_APPOINTMENT`, `GROOMING` |
 | `domain/AgendaItemStatus.java` | `SCHEDULED`, `DONE`, `MISSED`, `CANCELLED` |
+| `domain/AgendaItemRecurrence.java` | `EVERY_WEEK` … `EVERY_YEAR` + calcul de la prochaine occurrence |
 | `dto/AgendaItemRequest.java` · `AgendaItemResponse.java` · `UpdateAgendaStatusRequest.java` | Objets d'échange |
-| `repository/AgendaItemRepository.java` | `findByOwnerId`, `findByOwnerIdAndType`, `findByPetId` |
-| `service/AgendaService.java` + `AgendaServiceImpl.java` | create, list, getById, update, updateStatus, delete + contrôle de propriété + vérifie que l'animal existe |
+| `repository/AgendaItemRepository.java` | Requêtes dérivées (dont `findByStatusAndScheduledAtBefore`) |
+| `repository/AgendaItemRepositoryCustom(Impl).java` | Recherche dynamique `MongoTemplate` (filtres `petId`, `type`, `from`, `to`) |
+| `service/AgendaService.java` + `AgendaServiceImpl.java` | CRUD + contrôle de propriété + animal existant + récurrence au passage à `DONE` |
 | `controller/AgendaController.java` | Endpoints REST, rôle `PET_OWNER` |
+| `config/AgendaSchedulingConfig.java` | Active `@Scheduled` pour le module |
+| `scheduler/AgendaReminderScheduler.java` | Toutes les heures : rappels `SCHEDULED` dépassés → `MISSED` |
 
-**Endpoints disponibles :**
+**Endpoints :**
 ```
-POST   /agenda                 créer un rappel / rendez-vous
-GET    /agenda?type=...        lister (filtre par type)
-GET    /agenda/{id}            détail
-PUT    /agenda/{id}            modifier
-PATCH  /agenda/{id}/status     changer le statut (DONE, CANCELLED…)
-DELETE /agenda/{id}            supprimer
+POST   /agenda                                   créer un rappel / rendez-vous
+GET    /agenda?petId=&type=&from=&to=            lister (filtres optionnels, dates ISO-8601)
+GET    /agenda/{id}                              détail
+PUT    /agenda/{id}                              modifier (corps complet)
+PATCH  /agenda/{id}/status                       changer le statut (DONE, CANCELLED…)
+DELETE /agenda/{id}                              supprimer
 ```
 
-### 📱 Mobile — partiel (`lib/features/agenda/`)
-- `presentation/agenda_page.dart` : écran **liste en lecture seule** (appelle `GET /agenda`).
-- ❌ Manque : couches `data/` et `domain/`, écrans de création/édition/suppression, calendrier, filtres, notifications.
+### 📱 Mobile (`lib/features/agenda/`)
+
+| Fichier | Rôle |
+|---------|------|
+| `domain/agenda_item.dart` | Entité `AgendaItem` + désérialisation JSON |
+| `data/agenda_api.dart` | Appels REST (dio) |
+| `data/agenda_notifications.dart` | Notifications locales programmées sur `reminderAt` (Android) |
+| `presentation/agenda_controller.dart` | Providers Riverpod (liste, CRUD, statut, notifications) |
+| `presentation/agenda_page.dart` | Écran : vues Mois / Semaine / Liste, filtres animal + type, sections, Valider / Annuler |
+| `presentation/agenda_form_page.dart` | Formulaire créer / modifier / supprimer (dont choix du rappel) |
+| `presentation/agenda_colors.dart` | Palette locale tirée de la maquette Figma |
 
 ---
 
-## 2. Ce qu'on doit faire — check-list
+## 2. Check-list
 
 ### Backend
-- [ ] Filtre par période `from`/`to` sur `GET /agenda` (repository + service + controller).
-- [ ] Exploiter `reminderAt` : mécanisme de rappel/notification (à cadrer : `@Scheduled` backend et/ou notifications locales mobile).
-- [ ] Logique de **récurrence** (`recurrence`) : regénérer un rappel (ex. vermifuge tous les 3 mois).
-- [ ] Tests du service (propriété, création liée à un animal, changement de statut).
+- [x] Filtre par période `from`/`to` (et `petId`) sur `GET /agenda` (repository + service + controller).
+- [x] Exploiter `reminderAt` : tâche `@Scheduled` (retards → `MISSED`) + notifications locales côté mobile.
+- [x] Logique de **récurrence** (`recurrence`) : prochaine occurrence créée au passage à `DONE`.
+- [x] Champs d'affichage : `vetName`, `location`, `durationMinutes`, `urgent`.
+- [ ] Tests du service — non réalisés (validation manuelle via l'application).
 
 ### Mobile (Clean Architecture — voir [MOBILE.md](../MOBILE.md))
-- [ ] `domain/` : entité `AgendaItem`, interface repository, use cases.
-- [ ] `data/` : `AgendaApi` (dio) + models JSON + implémentation repository.
-- [ ] `presentation/` : créer / modifier / supprimer un rappel (formulaires → POST/PUT/DELETE).
-- [ ] `presentation/` : marquer fait / annulé (PATCH `/status`).
-- [ ] `presentation/` : vue **calendrier** + liste « à venir ».
-- [ ] `presentation/` : filtres par animal / type / période.
-- [ ] **Notifications locales** (`flutter_local_notifications`) basées sur `reminderAt`.
+- [x] `domain/` : entité `AgendaItem` (structure alignée sur la feature `pets` : pas d'interface repository ni de use cases).
+- [x] `data/` : `AgendaApi` (dio) + désérialisation JSON + service de notifications.
+- [x] `presentation/` : créer / modifier / supprimer un rappel (formulaire → POST/PUT/DELETE).
+- [x] `presentation/` : marquer fait / annulé (PATCH `/status`, avec confirmation pour l'annulation).
+- [x] `presentation/` : vues **Mois** (calendrier), **Semaine** et **Liste** + sections Aujourd'hui / À venir / Passés.
+- [x] `presentation/` : filtres par animal / type / période.
+- [x] **Notifications locales** (`flutter_local_notifications`) basées sur `reminderAt` (Android).
+
+### Reporté
+- Carte / itinéraire du rendez-vous (nécessite le SDK Google Maps et une clé API).
 
 ### Dépendances (déjà fournies)
 - **Auth** → JWT sécurise déjà les endpoints. ✅
@@ -90,14 +106,17 @@ DELETE /agenda/{id}            supprimer
 ## 4. Démarrage rapide
 
 ```bash
-# 1. Base de données
+# 1. Base de données (Docker Desktop lancé)
 docker compose up -d
 
-# 2. Backend
-cd backend && ./mvnw spring-boot:run -Dspring-boot.run.profiles=local
-#   API : http://localhost:8080/api/v1 · Swagger : http://localhost:8080/swagger-ui.html
+# 2. Backend : lancer PetCareApplication depuis IntelliJ (profil local par défaut)
+#   API : http://localhost:8080/api/v1 · Swagger : http://localhost:8080/api/v1/swagger-ui.html
 
-# 3. Mobile
+# 3. Mobile (émulateur Android)
+flutter emulators --launch petcare_pixel
 cd mobile && flutter pub get && flutter run
 ```
+> L'émulateur Android joint le backend via `10.0.2.2` (= `localhost` de la machine hôte),
+> déjà configuré dans `lib/core/config/app_config.dart`.
+
 Détails complets dans [SETUP.md](../SETUP.md).

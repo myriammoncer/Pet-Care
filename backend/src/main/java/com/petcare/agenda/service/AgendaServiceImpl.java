@@ -13,6 +13,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
+
 @Service
 public class AgendaServiceImpl implements AgendaService {
 
@@ -33,16 +35,17 @@ public class AgendaServiceImpl implements AgendaService {
                 .ownerId(ownerId).petId(r.petId()).type(r.type()).title(r.title())
                 .notes(r.notes()).scheduledAt(r.scheduledAt()).reminderAt(r.reminderAt())
                 .status(AgendaItemStatus.SCHEDULED).recurrence(r.recurrence())
+                .vetName(r.vetName()).location(r.location())
+                .durationMinutes(r.durationMinutes()).urgent(r.urgent() != null && r.urgent())
                 .build();
         return AgendaItemResponse.from(repository.save(item));
     }
 
     @Override
-    public Page<AgendaItemResponse> list(String ownerId, AgendaItemType type, Pageable pageable) {
-        Page<AgendaItem> page = (type == null)
-                ? repository.findByOwnerId(ownerId, pageable)
-                : repository.findByOwnerIdAndType(ownerId, type, pageable);
-        return page.map(AgendaItemResponse::from);
+    public Page<AgendaItemResponse> list(String ownerId, String petId, AgendaItemType type,
+                                         Instant from, Instant to, Pageable pageable) {
+        return repository.search(ownerId, petId, type, from, to, pageable)
+                .map(AgendaItemResponse::from);
     }
 
     @Override
@@ -59,6 +62,10 @@ public class AgendaServiceImpl implements AgendaService {
         item.setScheduledAt(r.scheduledAt());
         item.setReminderAt(r.reminderAt());
         item.setRecurrence(r.recurrence());
+        item.setVetName(r.vetName());
+        item.setLocation(r.location());
+        item.setDurationMinutes(r.durationMinutes());
+        item.setUrgent(r.urgent() != null && r.urgent());
         return AgendaItemResponse.from(repository.save(item));
     }
 
@@ -66,7 +73,13 @@ public class AgendaServiceImpl implements AgendaService {
     public AgendaItemResponse updateStatus(String id, String ownerId, AgendaItemStatus status) {
         AgendaItem item = findOwned(id, ownerId);
         item.setStatus(status);
-        return AgendaItemResponse.from(repository.save(item));
+        AgendaItem saved = repository.save(item);
+
+        // Récurrence : un rappel récurrent marqué « fait » planifie automatiquement le suivant.
+        if (status == AgendaItemStatus.DONE && item.getRecurrence() != null) {
+            createNextOccurrence(item);
+        }
+        return AgendaItemResponse.from(saved);
     }
 
     @Override
@@ -81,5 +94,30 @@ public class AgendaServiceImpl implements AgendaService {
             throw new ForbiddenException("Access denied to agenda item " + id);
         }
         return item;
+    }
+
+    /** Crée la prochaine occurrence d'un rappel récurrent terminé. */
+    private void createNextOccurrence(AgendaItem done) {
+        Instant nextScheduledAt = done.getRecurrence().next(done.getScheduledAt());
+        Instant nextReminderAt = (done.getReminderAt() == null)
+                ? null
+                : done.getRecurrence().next(done.getReminderAt());
+
+        AgendaItem next = AgendaItem.builder()
+                .ownerId(done.getOwnerId())
+                .petId(done.getPetId())
+                .type(done.getType())
+                .title(done.getTitle())
+                .notes(done.getNotes())
+                .scheduledAt(nextScheduledAt)
+                .reminderAt(nextReminderAt)
+                .status(AgendaItemStatus.SCHEDULED)
+                .recurrence(done.getRecurrence())
+                .vetName(done.getVetName())
+                .location(done.getLocation())
+                .durationMinutes(done.getDurationMinutes())
+                .urgent(done.isUrgent())
+                .build();
+        repository.save(next);
     }
 }
