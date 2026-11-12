@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../profile/presentation/profile_controller.dart';
 import '../../../core/di/providers.dart';
 import '../../../core/network/token_storage.dart';
 import '../data/auth_api.dart';
@@ -28,10 +29,11 @@ class AuthState {
 /// Contrôleur d'authentification. ChangeNotifier pour servir de
 /// `refreshListenable` à go_router.
 class AuthController extends ChangeNotifier {
-  AuthController(this._api, this._storage);
+  AuthController(this._api, this._storage, this._ref);
 
   final AuthApi _api;
   final TokenStorage _storage;
+  final Ref _ref; // sert à vider les caches liés à la session (profil…)
 
   AuthState _state = const AuthState();
   AuthState get state => _state;
@@ -47,6 +49,7 @@ class AuthController extends ChangeNotifier {
     try {
       final result = await _api.login(email, password);
       await _storage.saveTokens(access: result.accessToken, refresh: result.refreshToken);
+      _ref.invalidate(profileControllerProvider); // nouvelle session → on jette le cache de l'ancienne
       _set(AuthState(user: result.user));
     } catch (_) {
       _set(const AuthState(error: 'Email ou mot de passe invalide'));
@@ -67,6 +70,7 @@ class AuthController extends ChangeNotifier {
         firstName: firstName, lastName: lastName, role: role,
       );
       await _storage.saveTokens(access: result.accessToken, refresh: result.refreshToken);
+      _ref.invalidate(profileControllerProvider); // nouvelle session → on jette le cache de l'ancienne
       _set(AuthState(user: result.user));
     } catch (_) {
       _set(const AuthState(error: "Échec de l'inscription (email déjà utilisé ?)"));
@@ -75,7 +79,10 @@ class AuthController extends ChangeNotifier {
 
   Future<void> logout() async {
     await _storage.clear();
-    _set(const AuthState());
+    _set(const AuthState()); // déclenche la redirection vers /login (démonte la page profil)
+    // Vide le cache /users/me : sans ça, le prochain login réaffiche
+    // le profil de l'utilisateur précédent (bug « session admin »).
+    _ref.invalidate(profileControllerProvider);
   }
 }
 
@@ -84,5 +91,6 @@ final authControllerProvider = ChangeNotifierProvider<AuthController>((ref) {
   return AuthController(
     AuthApi(ref.watch(dioProvider)),
     ref.watch(tokenStorageProvider),
+    ref,
   );
 });
