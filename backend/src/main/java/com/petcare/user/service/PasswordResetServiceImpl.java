@@ -1,5 +1,5 @@
 package com.petcare.user.service;
-
+import org.springframework.beans.factory.annotation.Value;
 import com.petcare.common.exception.ConflictException;
 import com.petcare.common.exception.ResourceNotFoundException;
 import com.petcare.user.domain.PasswordResetToken;
@@ -43,46 +43,21 @@ public class PasswordResetServiceImpl implements PasswordResetService {
     private final UserRepository userRepository;
     private final PasswordResetTokenRepository tokenRepository;
     private final PasswordEncoder passwordEncoder;
+    private final EmailService emailService;
+    private final boolean exposeResetToken;
     private final SecureRandom secureRandom = new SecureRandom();
 
     public PasswordResetServiceImpl(UserRepository userRepository,
                                     PasswordResetTokenRepository tokenRepository,
-                                    PasswordEncoder passwordEncoder) {
+                                    PasswordEncoder passwordEncoder,
+                                    EmailService emailService,
+                                    @Value("${petcare.dev.expose-reset-token:false}") boolean exposeResetToken) {
         this.userRepository = userRepository;
         this.tokenRepository = tokenRepository;
         this.passwordEncoder = passwordEncoder;
+        this.emailService = emailService;
+        this.exposeResetToken = exposeResetToken;
     }
-
-    @Override
-    public void forgotPassword(ForgotPasswordRequest request) {
-        // ⚠️ Adapte le nom si ton UserRepository diffère (ex. findByEmailIgnoreCase).
-        Optional<User> maybeUser = userRepository.findByEmail(request.email());
-
-        // Réponse identique que l'email existe ou non → anti-énumération.
-        if (maybeUser.isEmpty()) {
-            log.info("Demande de reset pour un email inconnu : {}", request.email());
-            return;
-        }
-        User user = maybeUser.get();
-
-        // 1. Jeton clair (envoyé à l'utilisateur) + son hash (stocké en base).
-        String rawToken = generateToken();
-        String tokenHash = sha256(rawToken);
-
-        // 2. Persiste le jeton haché avec une expiration.
-        PasswordResetToken token = new PasswordResetToken(
-                user.getId(),
-                tokenHash,
-                Instant.now().plus(TOKEN_TTL_MINUTES, ChronoUnit.MINUTES)
-        );
-        tokenRepository.save(token);
-
-        // 3. « Envoi » du jeton. DEV : log. PROD : email avec un lien de reset.
-        log.info("[RESET MOT DE PASSE] Jeton pour {} (valable {} min) : {}",
-                user.getEmail(), TOKEN_TTL_MINUTES, rawToken);
-        // TODO prod : envoyer un email vers https://app.petcare/reset?token=<rawToken>
-    }
-
     @Override
     public void resetPassword(ResetPasswordRequest request) {
         String tokenHash = sha256(request.token());
@@ -108,8 +83,8 @@ public class PasswordResetServiceImpl implements PasswordResetService {
         log.info("Mot de passe réinitialisé pour {}", user.getEmail());
     }
 
-    // ─── Helpers ───────────────────────────────────────────────────────────
 
+    // ─── Helpers ───────────────────────────────────────────────────────────
     /** Jeton aléatoire URL-safe (32 octets → ~43 caractères). */
     private String generateToken() {
         byte[] bytes = new byte[32];
@@ -126,5 +101,40 @@ public class PasswordResetServiceImpl implements PasswordResetService {
         } catch (Exception e) {
             throw new IllegalStateException("SHA-256 indisponible", e);
         }
+    }
+
+    @Override
+    public String forgotPassword(ForgotPasswordRequest request) {
+        Optional<User> maybeUser = userRepository.findByEmail(request.email());
+
+        // Réponse identique que l'email existe ou non → anti-énumération.
+        if (maybeUser.isEmpty()) {
+            log.info("Demande de reset pour un email inconnu : {}", request.email());
+            return null;
+        }
+        User user = maybeUser.get();
+
+        String rawToken = generateToken();
+        String tokenHash = sha256(rawToken);
+
+        PasswordResetToken token = new PasswordResetToken(
+                user.getId(), tokenHash,
+                Instant.now().plus(TOKEN_TTL_MINUTES, ChronoUnit.MINUTES));
+        tokenRepository.save(token);
+
+        log.info("[RESET MOT DE PASSE] Jeton pour {} (valable {} min) : {}",
+                user.getEmail(), TOKEN_TTL_MINUTES, rawToken);
+
+        // Envoi de l'email (si SMTP configuré). Un échec ne doit PAS bloquer la
+        // réponse ni révéler l'existence du compte → on journalise seulement l'erreur.
+        try {
+            emailService.sendPasswordReset(user.getEmail(), rawToken);
+        } catch (Exception e) {
+            log.warn("Échec d'envoi de l'email de reset à {} : {}", user.getEmail(), e.getMessage());
+        }
+
+        // En DEV uniquement : on renvoie le jeton pour l'afficher dans l'app.
+        // En PROD (flag false) : null → le jeton ne sort que par les logs/email.
+        return exposeResetToken ? rawToken : null;
     }
 }

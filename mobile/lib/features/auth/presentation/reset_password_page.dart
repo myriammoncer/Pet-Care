@@ -9,7 +9,10 @@ import '../data/password_reset_api.dart';
 
 /// Écran « Nouveau mot de passe » : jeton reçu + nouveau mot de passe.
 class ResetPasswordPage extends ConsumerStatefulWidget {
-  const ResetPasswordPage({super.key});
+  const ResetPasswordPage({super.key, this.initialToken});
+
+  /// Jeton pré-rempli (passé en query param depuis l'écran « Mot de passe oublié »).
+  final String? initialToken;
 
   @override
   ConsumerState<ResetPasswordPage> createState() => _ResetPasswordPageState();
@@ -17,10 +20,17 @@ class ResetPasswordPage extends ConsumerStatefulWidget {
 
 class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
   final _formKey = GlobalKey<FormState>();
-  final _token = TextEditingController();
+  late final TextEditingController _token;
   final _password = TextEditingController();
   bool _obscure = true;
   bool _loading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Pré-remplit le champ jeton si on arrive depuis « Réinitialiser maintenant ».
+    _token = TextEditingController(text: widget.initialToken ?? '');
+  }
 
   @override
   void dispose() {

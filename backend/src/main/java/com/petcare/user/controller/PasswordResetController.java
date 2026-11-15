@@ -27,11 +27,11 @@ public class PasswordResetController {
 
     /** Étape 1 : l'utilisateur demande un lien de réinitialisation. */
     @PostMapping("/forgot-password")
-    public ResponseEntity<ApiResponse<Void>> forgot(
+    public ResponseEntity<ApiResponse<String>> forgot(
             @Valid @RequestBody ForgotPasswordRequest request) {
-        service.forgotPassword(request);
-        // Message neutre : on ne révèle pas si l'email existe.
-        return ResponseEntity.ok(ApiResponse.<Void>ok(null,
+        // devToken = le jeton en clair en mode dev, sinon null.
+        String devToken = service.forgotPassword(request);
+        return ResponseEntity.ok(ApiResponse.ok(devToken,
                 "Si un compte existe pour cet email, un lien de réinitialisation a été envoyé."));
     }
 
