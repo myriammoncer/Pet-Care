@@ -47,13 +47,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // ── Logo dans une pastille menthe ──
-                Container(
-                  width: 84,
-                  height: 84,
-                  decoration: const BoxDecoration(color: AppTokens.mint, shape: BoxShape.circle),
-                  child: const Icon(Icons.pets, size: 42, color: AppTokens.primary),
-                ),
+                // ── Logo de la marque ──
+                Image.asset('assets/images/logo.png', height: 72),
                 const SizedBox(height: 16),
                 const Text('Bon retour',
                     style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700)),

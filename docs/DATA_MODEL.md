@@ -219,8 +219,16 @@ Les lignes de commande **figent** le prix et le nom au moment de l'achat
 | `scheduledAt` | Date | Date/heure prévue. |
 | `reminderAt` | Date | Date/heure du rappel (notification). |
 | `status` | enum | `SCHEDULED, DONE, MISSED, CANCELLED`. |
-| `recurrence` | String | Règle de récurrence (ex. `EVERY_3_MONTHS`), optionnel. |
+| `recurrence` | enum | Optionnel : `EVERY_WEEK, EVERY_MONTH, EVERY_3_MONTHS, EVERY_6_MONTHS, EVERY_YEAR`. |
+| `vetName` | String | Vétérinaire (ex. « Dr. Sophie Moreau »), optionnel. |
+| `location` | String | Lieu du soin (ex. « Clinique Les Lilas »), optionnel. |
+| `durationMinutes` | int | Durée prévue en minutes, optionnel. |
+| `urgent` | boolean | Soin urgent (badge « Urgent »), `false` par défaut. |
 | `createdAt` / `updatedAt` | Date | Audit. |
+
+**Règles métier** :
+- **Récurrence** : quand un rappel récurrent passe à `DONE`, le backend crée automatiquement la prochaine occurrence (`scheduledAt` et `reminderAt` décalés de la période), au statut `SCHEDULED`. Rien n'est recréé pour `CANCELLED` ou `MISSED`.
+- **Retards** : une tâche planifiée (toutes les heures) passe en `MISSED` les rappels encore `SCHEDULED` dont `scheduledAt` est dépassé.
 
 **Index** : `ownerId`, `petId`, `scheduledAt`, `status`.
 
