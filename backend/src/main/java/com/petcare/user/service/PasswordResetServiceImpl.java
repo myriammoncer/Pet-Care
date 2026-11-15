@@ -43,16 +43,19 @@ public class PasswordResetServiceImpl implements PasswordResetService {
     private final UserRepository userRepository;
     private final PasswordResetTokenRepository tokenRepository;
     private final PasswordEncoder passwordEncoder;
+    private final EmailService emailService;
     private final boolean exposeResetToken;
     private final SecureRandom secureRandom = new SecureRandom();
 
     public PasswordResetServiceImpl(UserRepository userRepository,
                                     PasswordResetTokenRepository tokenRepository,
                                     PasswordEncoder passwordEncoder,
+                                    EmailService emailService,
                                     @Value("${petcare.dev.expose-reset-token:false}") boolean exposeResetToken) {
         this.userRepository = userRepository;
         this.tokenRepository = tokenRepository;
         this.passwordEncoder = passwordEncoder;
+        this.emailService = emailService;
         this.exposeResetToken = exposeResetToken;
     }
     @Override
@@ -121,6 +124,14 @@ public class PasswordResetServiceImpl implements PasswordResetService {
 
         log.info("[RESET MOT DE PASSE] Jeton pour {} (valable {} min) : {}",
                 user.getEmail(), TOKEN_TTL_MINUTES, rawToken);
+
+        // Envoi de l'email (si SMTP configuré). Un échec ne doit PAS bloquer la
+        // réponse ni révéler l'existence du compte → on journalise seulement l'erreur.
+        try {
+            emailService.sendPasswordReset(user.getEmail(), rawToken);
+        } catch (Exception e) {
+            log.warn("Échec d'envoi de l'email de reset à {} : {}", user.getEmail(), e.getMessage());
+        }
 
         // En DEV uniquement : on renvoie le jeton pour l'afficher dans l'app.
         // En PROD (flag false) : null → le jeton ne sort que par les logs/email.
