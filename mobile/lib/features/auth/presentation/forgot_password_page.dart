@@ -20,7 +20,7 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
   final _email = TextEditingController();
   bool _loading = false;
   bool _sent = false; // passe à true après l'envoi → affiche la confirmation
-
+  String? _devToken; // jeton renvoyé par le backend en mode dev
   @override
   void dispose() {
     _email.dispose();
@@ -28,12 +28,19 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
   }
 
   Future<void> _submit() async {
+    // 1) On valide le formulaire AVANT tout appel réseau.
     if (!_formKey.currentState!.validate()) return;
     setState(() => _loading = true);
     try {
-      // On instancie l'API avec le dio global (pas de provider dédié nécessaire).
-      await PasswordResetApi(ref.read(dioProvider)).forgotPassword(_email.text.trim());
-      if (mounted) setState(() => _sent = true);
+      // 2) Un SEUL appel. En mode dev le backend renvoie le jeton (sinon null).
+      final token =
+          await PasswordResetApi(ref.read(dioProvider)).forgotPassword(_email.text.trim());
+      if (mounted) {
+        setState(() {
+          _sent = true;
+          _devToken = token;
+        });
+      }
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context)
@@ -108,12 +115,42 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
             style: TextStyle(color: AppTokens.textMuted),
           ),
           const SizedBox(height: 20),
-          FilledButton(
-            onPressed: () => context.push('/reset-password'),
-            style: FilledButton.styleFrom(
-                backgroundColor: AppTokens.primary, minimumSize: const Size.fromHeight(48)),
-            child: const Text('J’ai mon jeton → Réinitialiser'),
-          ),
+
+          // En mode dev, le backend renvoie le jeton → on l'affiche + bouton pré-rempli.
+          if (_devToken != null) ...[
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppTokens.mint,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Jeton (mode dev) :',
+                      style: TextStyle(fontSize: 12, color: AppTokens.textMuted)),
+                  const SizedBox(height: 4),
+                  SelectableText(_devToken!,
+                      style: const TextStyle(fontWeight: FontWeight.w600)),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                  backgroundColor: AppTokens.primary, minimumSize: const Size.fromHeight(48)),
+              // Ouvre l'écran de reset avec le jeton déjà pré-rempli.
+              onPressed: () => context.push('/reset-password?token=$_devToken'),
+              child: const Text('Réinitialiser maintenant'),
+            ),
+          ] else
+            FilledButton(
+              onPressed: () => context.push('/reset-password'),
+              style: FilledButton.styleFrom(
+                  backgroundColor: AppTokens.primary, minimumSize: const Size.fromHeight(48)),
+              child: const Text('J’ai mon jeton → Réinitialiser'),
+            ),
           TextButton(
             onPressed: () => context.go('/login'),
             child: const Text('Retour à la connexion'),

@@ -44,7 +44,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/login', builder: (_, __) => const LoginPage()),
       GoRoute(path: '/signup', builder: (_, __) => const SignupPage()),
       GoRoute(path: '/forgot-password', builder: (_, __) => const ForgotPasswordPage()),
-      GoRoute(path: '/reset-password', builder: (_, __) => const ResetPasswordPage()),
+      GoRoute(
+        path: '/reset-password',
+        builder: (_, state) =>
+            ResetPasswordPage(initialToken: state.uri.queryParameters['token']),
+      ),
       // Section principale avec barre de navigation.
       ShellRoute(
         builder: (context, state, child) => HomeShell(child: child),
