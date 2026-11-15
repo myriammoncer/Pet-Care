@@ -100,7 +100,19 @@ Authorization: Bearer <token>
   "color": "Sable", "microchipNumber": "250269604985215", "status": "HEALTHY"
 }
 ```
-
+```http
+POST /api/v1/agenda
+Authorization: Bearer <token>
+{
+  "petId": "6651b2...", "type": "VET_APPOINTMENT",
+  "title": "Consultation annuelle", "notes": "Apporter le carnet",
+  "scheduledAt": "2026-11-20T14:30:00Z", "reminderAt": "2026-11-20T14:15:00Z",
+  "recurrence": "EVERY_YEAR", "vetName": "Dr. Sophie Moreau",
+  "location": "Clinique Les Lilas", "durationMinutes": 45, "urgent": false
+}
+```
+Champs obligatoires : `petId` (animal existant), `type`, `title`, `scheduledAt`. `PUT` attend le **même corps complet** (un champ absent est remis à `null`).
+`PATCH /agenda/{id}/status` : `{ "status": "DONE" | "CANCELLED" | "MISSED" | "SCHEDULED" }`.
 ---
 
 ## Module `dossier médical`
@@ -140,8 +152,7 @@ Authorization: Bearer <token>
 | Méthode | Route | Rôle | Description |
 |---------|-------|------|-------------|
 | POST | `/agenda` | PET_OWNER | Créer un rappel / rendez-vous. |
-| GET | `/agenda` | PET_OWNER | Liste (filtres : `petId`, `type`, `from`, `to`). |
-| GET | `/agenda/{id}` | propriétaire | Détail. |
+| GET | `/agenda` | PET_OWNER | Liste paginée (filtres optionnels : `petId`, `type`, `from`, `to` au format ISO-8601, ex. `2026-03-01T00:00:00Z`). |
 | PATCH | `/agenda/{id}/status` | propriétaire | Marquer DONE / CANCELLED. |
 | PUT | `/agenda/{id}` | propriétaire | Mise à jour. |
 | DELETE | `/agenda/{id}` | propriétaire | Suppression. |
