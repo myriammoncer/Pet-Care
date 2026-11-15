@@ -55,13 +55,8 @@ class _SignupPageState extends ConsumerState<SignupPage> {
           child: Column(
             children: [
               const SizedBox(height: 8),
-              // ── Pastille logo ──
-              Container(
-                width: 72,
-                height: 72,
-                decoration: const BoxDecoration(color: AppTokens.mint, shape: BoxShape.circle),
-                child: const Icon(Icons.pets, size: 36, color: AppTokens.primary),
-              ),
+              // ── Logo de la marque ──
+              Image.asset('assets/images/logo.png', height: 56),
               const SizedBox(height: 12),
               const Text('Créer ton compte',
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
