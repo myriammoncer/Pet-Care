@@ -6,9 +6,11 @@ class PasswordResetApi {
   PasswordResetApi(this._dio);
   final Dio _dio;
 
-  /// Étape 1 : demande un lien / jeton de réinitialisation.
-  Future<void> forgotPassword(String email) async {
-    await _dio.post('/auth/forgot-password', data: {'email': email});
+  /// Étape 1 : demande un jeton. Renvoie le jeton EN CLAIR si le backend est en
+  /// mode dev (expose-reset-token=true), sinon null.
+  Future<String?> forgotPassword(String email) async {
+    final response = await _dio.post('/auth/forgot-password', data: {'email': email});
+    return response.data['data'] as String?;
   }
 
   /// Étape 2 : envoie le jeton reçu + le nouveau mot de passe.

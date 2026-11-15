@@ -48,6 +48,12 @@
             <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
 
+        <!-- Envoi d'emails (SMTP / JavaMailSender) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
+        </dependency>
+
         <!-- Actuator (health checks) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
