@@ -7,17 +7,21 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Événement communautaire (collection {@code events}).
+ * Les participants sont embarqués (relation ∞–∞ Event ↔ Users, voir DATA_MODEL.md).
  */
 @Document(collection = "events")
+@CompoundIndex(name = "participants_user_idx", def = "{'participants.userId': 1}")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -46,6 +50,23 @@ public class Event extends AuditableDocument {
 
     public boolean isFull() {
         return participants.size() >= capacity;
+    }
+
+    /** Vrai si l'événement a déjà commencé (plus d'inscription / désinscription). */
+    public boolean hasStarted(Instant now) {
+        return startAt != null && !startAt.isAfter(now);
+    }
+
+    /** Inscription de l'utilisateur donné, s'il y en a une. */
+    public Optional<Participant> findParticipant(String userId) {
+        if (userId == null) {
+            return Optional.empty();
+        }
+        return participants.stream().filter(p -> userId.equals(p.getUserId())).findFirst();
+    }
+
+    public boolean isRegistered(String userId) {
+        return findParticipant(userId).isPresent();
     }
 
     /** Inscription d'un participant (utilisateur + animal). */
