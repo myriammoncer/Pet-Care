@@ -16,11 +16,6 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.util.List;
 
-/**
- * Filtre exécuté une fois par requête : extrait le JWT de l'en-tête
- * {@code Authorization: Bearer <token>}, le valide et alimente le
- * {@link SecurityContextHolder} avec l'identité et les rôles de l'utilisateur.
- */
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
@@ -46,9 +41,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 String userId = claims.getSubject();
                 List<String> roles = jwtService.extractRoles(claims);
 
-                List<SimpleGrantedAuthority> authorities = roles.stream()
-                        .map(r -> new SimpleGrantedAuthority("ROLE_" + r))
-                        .toList();
+                // On mappe le rôle à la fois brut ("ADMIN") et avec préfixe ("ROLE_ADMIN")
+                // pour satisfaire à la fois hasAuthority('ADMIN') et hasRole('ADMIN') / SecurityUtils.hasRole
+                List<SimpleGrantedAuthority> authorities = new java.util.ArrayList<>();
+                for (String role : roles) {
+                    authorities.add(new SimpleGrantedAuthority(role));
+                    if (!role.startsWith("ROLE_")) {
+                        authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
+                    }
+                }
 
                 var authentication = new UsernamePasswordAuthenticationToken(userId, null, authorities);
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
