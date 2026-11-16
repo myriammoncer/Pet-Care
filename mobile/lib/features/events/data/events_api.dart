@@ -1,10 +1,10 @@
 import 'package:dio/dio.dart';
 
-import '../../../core/error/failure.dart';
 import '../domain/pet_event.dart';
+import 'event_failure.dart';
 
 /// Appels réseau du module Événements (contrat : docs/API.md#module-événements).
-/// Les erreurs dio sont converties en [Failure] avec le message du backend.
+/// Les erreurs dio sont converties en [EventFailure] avec le message du backend.
 class EventsApi {
   EventsApi(this._dio);
   final Dio _dio;
@@ -84,9 +84,9 @@ class EventsApi {
     }
   }
 
-  /// Convertit une erreur dio en [Failure] en reprenant le message du backend
+  /// Convertit une erreur dio en [EventFailure] en reprenant le message du backend
   /// (`{ success: false, error: { code, message, details } }`).
-  static Failure _toFailure(DioException e) {
+  static EventFailure _toFailure(DioException e) {
     final status = e.response?.statusCode;
     String? serverMessage;
     final data = e.response?.data;
@@ -97,14 +97,23 @@ class EventsApi {
           ? details.join('\n')
           : error['message'] as String?;
     }
-    if (status == null) return const NetworkFailure();
-    if (status == 400 || status == 409) {
-      return ValidationFailure(serverMessage ?? 'Requête invalide');
+    if (status == null) {
+      return const EventFailure('Erreur réseau, réessayez plus tard');
     }
-    if (status == 401) return const UnauthorizedFailure();
-    if (status == 403) return ForbiddenFailure(serverMessage ?? 'Accès refusé');
-    if (status == 404) return NotFoundFailure(serverMessage ?? 'Ressource introuvable');
-    if (status >= 500) return const NetworkFailure();
-    return UnexpectedFailure(serverMessage ?? 'Une erreur est survenue');
+    final String fallback;
+    if (status == 400 || status == 409) {
+      fallback = 'Requête invalide';
+    } else if (status == 401) {
+      return const EventFailure('Session expirée, reconnectez-vous', statusCode: 401);
+    } else if (status == 403) {
+      fallback = 'Accès refusé';
+    } else if (status == 404) {
+      fallback = 'Ressource introuvable';
+    } else if (status >= 500) {
+      return EventFailure('Erreur serveur, réessayez plus tard', statusCode: status);
+    } else {
+      fallback = 'Une erreur est survenue';
+    }
+    return EventFailure(serverMessage ?? fallback, statusCode: status);
   }
 }

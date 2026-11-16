@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/error/failure.dart';
 import '../../../core/theme/app_tokens.dart';
+import '../data/event_failure.dart';
 import '../domain/pet_event.dart';
 
 /// Libellés, icônes, couleurs et formats partagés par les écrans Événements.
@@ -75,8 +75,8 @@ String formatEventWhen(PetEvent e) {
   return sameDay ? '$start – ${formatTime(end)}' : '$start → ${formatDay(end)} · ${formatTime(end)}';
 }
 
-/// Message lisible pour une erreur (Failure du data layer ou autre).
-String errorText(Object error) => error is Failure ? error.message : '$error';
+/// Message lisible pour une erreur (EventFailure du data layer ou autre).
+String errorText(Object error) => error is EventFailure ? error.message : '$error';
 
 void showEventSnack(BuildContext context, String message, {bool error = false}) {
   ScaffoldMessenger.of(context)
