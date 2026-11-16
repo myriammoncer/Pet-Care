@@ -14,7 +14,7 @@ class AgendaApi {
     DateTime? from,
     DateTime? to,
   }) async {
-    final query = <String, dynamic>{};
+    final query = <String, dynamic>{'size': 1000};
     if (petId != null) query['petId'] = petId;
     if (type != null) query['type'] = type;
     if (from != null) query['from'] = from.toUtc().toIso8601String();
