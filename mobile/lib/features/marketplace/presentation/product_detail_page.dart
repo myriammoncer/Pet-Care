@@ -353,11 +353,24 @@ class _ProductDetailPageState extends ConsumerState<ProductDetailPage> {
                             onPressed: isOutOfStock
                                 ? null
                                 : () async {
-                                    await ref
+                                    final success = await ref
                                         .read(cartProvider.notifier)
                                         .addItem(product.id, _quantity);
-                                    if (context.mounted) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
+                                    if (!context.mounted) return;
+
+                                    if (!success) {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(const SnackBar(
+                                        content: Text(
+                                          'Impossible d\'ajouter au panier. '
+                                          'Veuillez vous connecter.',
+                                          style: TextStyle(fontSize: 13),
+                                        ),
+                                        backgroundColor: Color(0xFFEF4444),
+                                      ));
+                                    } else {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
                                         SnackBar(
                                           behavior: SnackBarBehavior.floating,
                                           shape: RoundedRectangleBorder(
@@ -380,7 +393,15 @@ class _ProductDetailPageState extends ConsumerState<ProductDetailPage> {
                                           action: SnackBarAction(
                                             label: 'Panier',
                                             textColor: theme.colorScheme.primary,
-                                            onPressed: () => context.push('/cart'),
+                                            onPressed: () {
+                                              if (context.mounted) {
+                                                Future.microtask(() {
+                                                  if (context.mounted) {
+                                                    GoRouter.of(context).push('/cart');
+                                                  }
+                                                });
+                                              }
+                                            },
                                           ),
                                         ),
                                       );

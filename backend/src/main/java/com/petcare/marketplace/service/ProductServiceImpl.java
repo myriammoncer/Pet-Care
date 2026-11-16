@@ -6,9 +6,11 @@ import com.petcare.marketplace.domain.ProductCategory;
 import com.petcare.marketplace.dto.ProductRequest;
 import com.petcare.marketplace.dto.ProductResponse;
 import com.petcare.marketplace.repository.ProductRepository;
+import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class ProductServiceImpl implements ProductService {
@@ -71,5 +73,72 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public void delete(String id) {
         repository.delete(getEntity(id));
+    }
+
+    @Override
+    @Transactional
+    public int reseedAlimentation() {
+        repository.deleteAllByCategory(ProductCategory.ALIMENTATION);
+        List<Product> products = AlimentationSeedData.products();
+        repository.saveAll(products);
+        return products.size();
+    }
+
+    @Override
+    @Transactional
+    public int reseedJouets() {
+        repository.deleteAllByCategory(ProductCategory.JOUETS);
+        List<Product> products = JouetsSeedData.products();
+        repository.saveAll(products);
+        return products.size();
+    }
+
+    @Override
+    @Transactional
+    public int reseedNicheCouchage() {
+        repository.deleteAllByCategory(ProductCategory.NICHE_COUCHAGE);
+        List<Product> products = NicheCouchageSeedData.products();
+        repository.saveAll(products);
+        return products.size();
+    }
+
+    @Override
+    @Transactional
+    public int reseedHygieneSoins() {
+        repository.deleteAllByCategory(ProductCategory.HYGIENE_SOINS);
+        List<Product> products = HygieneSoinsSeedData.products();
+        repository.saveAll(products);
+        return products.size();
+    }
+
+    @Override
+    @Transactional
+    public int reseedAccessoires() {
+        repository.deleteAllByCategory(ProductCategory.ACCESSORIES);
+        List<Product> products = AccessoiresSeedData.products();
+        repository.saveAll(products);
+        return products.size();
+    }
+
+    @Override
+    @Transactional
+    public int reseedTransport() {
+        repository.deleteAllByCategory(ProductCategory.TRANSPORT);
+        List<Product> products = TransportSeedData.products();
+        repository.saveAll(products);
+        return products.size();
+    }
+
+    @Override
+    @Transactional
+    public int reseedAll() {
+        int total = 0;
+        total += reseedAlimentation();
+        total += reseedJouets();
+        total += reseedNicheCouchage();
+        total += reseedHygieneSoins();
+        total += reseedAccessoires();
+        total += reseedTransport();
+        return total;
     }
 }

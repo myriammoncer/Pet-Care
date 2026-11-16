@@ -12,11 +12,11 @@ public final class SecurityUtils {
     private SecurityUtils() {
     }
 
-    /** Identifiant de l'utilisateur courant (claim {@code sub} du JWT). */
+    /** Identifiant de l'utilisateur courant (claim {@code sub} du JWT). Retourne "guest" si non authentifié. */
     public static String currentUserId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || auth.getPrincipal() == null) {
-            throw new ForbiddenException("No authenticated user");
+            return "guest";
         }
         return auth.getPrincipal().toString();
     }

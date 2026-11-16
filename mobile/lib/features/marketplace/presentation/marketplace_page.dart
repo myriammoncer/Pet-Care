@@ -16,9 +16,10 @@ final marketplaceApiProvider = Provider<MarketplaceApi>(
   (ref) => MarketplaceApi(ref.watch(dioProvider)),
 );
 
-/// Récupère le catalogue de produits.
+/// Récupère le catalogue de produits, filtré par catégorie côté backend.
 final productsProvider = FutureProvider<List<Product>>((ref) async {
-  return ref.watch(marketplaceApiProvider).list();
+  final category = ref.watch(selectedCategoryProvider);
+  return ref.read(marketplaceApiProvider).list(category: category);
 });
 
 /// Identifiant de la catégorie sélectionnée ('ALL' par défaut).
@@ -33,12 +34,21 @@ class MarketplacePage extends ConsumerStatefulWidget {
 
 class _MarketplacePageState extends ConsumerState<MarketplacePage> {
   void _injectMagicProducts(BuildContext context) async {
+    // Purge + re-seed toutes les catégories (backend) — élimine les doublons
+    try {
+      final count = await ref.read(marketplaceApiProvider).reseedAll();
+      print('✅ Re-seed terminé : $count produits créés');
+      ref.invalidate(productsProvider);
+    } catch (e) {
+      print('❌ Erreur re-seed : $e');
+    }
     // ═══════════════════════════════════════════════════════════════
     // 31 produits premium — un par image, classés par catégorie
     // ═══════════════════════════════════════════════════════════════
     final fakeProducts = [
       // ───────── ALIMENTATION (10 produits) ─────────
       {
+        "id": "alim_01",
         "name": "Croquettes Bio Premium Saumon",
         "description": "Riches en saumon frais et super-aliments, formulées sans céréales, sac de 5 kg pour une vitalité optimale et un pelage éclatant.",
         "price": 34.99,
@@ -49,6 +59,7 @@ class _MarketplacePageState extends ConsumerState<MarketplacePage> {
         "active": true
       },
       {
+        "id": "alim_02",
         "name": "Pack Découverte Made in France",
         "description": "Assortiment gourmand fabriqué en France : croquettes, pâtées et friandises naturelles pour chien exigeant.",
         "price": 42.90,
@@ -59,6 +70,7 @@ class _MarketplacePageState extends ConsumerState<MarketplacePage> {
         "active": true
       },
       {
+        "id": "alim_03",
         "name": "Croquettes Chat Adulte Poulet & Riz",
         "description": "Recette équilibrée à base de poulet fermier et riz complet, enrichie en taurine pour la santé cardiaque du chat.",
         "price": 27.50,
@@ -69,6 +81,7 @@ class _MarketplacePageState extends ConsumerState<MarketplacePage> {
         "active": true
       },
       {
+        "id": "alim_04",
         "name": "Pâtée Gold Miel & Fusion Nutribird",
         "description": "Alimentation premium pour oiseaux, enrichie au miel naturel et vitamines essentielles pour un plumage vibrant.",
         "price": 18.90,
@@ -79,6 +92,7 @@ class _MarketplacePageState extends ConsumerState<MarketplacePage> {
         "active": true
       },
       {
+        "id": "alim_05",
         "name": "Alimentation Naturelle Chiot",
         "description": "Formule spéciale croissance avec DHA, protéines de haute qualité et calcium pour le développement osseux du chiot.",
         "price": 31.00,
@@ -89,6 +103,7 @@ class _MarketplacePageState extends ConsumerState<MarketplacePage> {
         "active": true
       },
       {
+        "id": "alim_06",
         "name": "Repas Complet Bio pour Chat",
         "description": "Nourriture complète certifiée bio, à base de viande fraîche et légumes de saison, sans conservateurs artificiels.",
         "price": 23.50,
@@ -99,6 +114,7 @@ class _MarketplacePageState extends ConsumerState<MarketplacePage> {
         "active": true
       },
       {
+        "id": "alim_07",
         "name": "Croquettes Hypoallergéniques Agneau",
         "description": "Formule mono-protéine à l'agneau pour les chiens sensibles, sans gluten ni additifs, digestion douce garantie.",
         "price": 38.90,
@@ -109,6 +125,7 @@ class _MarketplacePageState extends ConsumerState<MarketplacePage> {
         "active": true
       },
       {
+        "id": "alim_08",
         "name": "Friandises Dentaires Bâtonnets",
         "description": "Bâtonnets à mâcher enrichis en menthe et enzymes naturelles pour une haleine fraîche et des dents saines.",
         "price": 9.90,
@@ -119,6 +136,7 @@ class _MarketplacePageState extends ConsumerState<MarketplacePage> {
         "active": true
       },
       {
+        "id": "alim_09",
         "name": "Boîtes Pâté Gourmet Bœuf & Légumes",
         "description": "Pâté onctueux au bœuf sélectionné et petits légumes du jardin, source de protéines nobles et oméga-3.",
         "price": 15.90,
@@ -129,6 +147,7 @@ class _MarketplacePageState extends ConsumerState<MarketplacePage> {
         "active": true
       },
       {
+        "id": "alim_10",
         "name": "Complément Alimentaire Vitalité+",
         "description": "Supplément en poudre aux vitamines B, zinc et levure de bière pour renforcer l'immunité et la beauté du poil.",
         "price": 22.00,
@@ -141,6 +160,7 @@ class _MarketplacePageState extends ConsumerState<MarketplacePage> {
 
       // ───────── JOUETS (5 produits) ─────────
       {
+        "id": "jouet_01",
         "name": "Balle Rebondissante Haute Résistance",
         "description": "Caoutchouc naturel non toxique, conçue pour les séances de jeu intenses et interactives avec votre compagnon.",
         "price": 14.50,
@@ -151,6 +171,7 @@ class _MarketplacePageState extends ConsumerState<MarketplacePage> {
         "active": true
       },
       {
+        "id": "jouet_02",
         "name": "Peluche Artisanale Sur Mesure",
         "description": "Peluche douce cousue main avec rembourrage hypoallergénique, compagnon câlin idéal pour chiot et petit chien.",
         "price": 24.90,
@@ -161,6 +182,7 @@ class _MarketplacePageState extends ConsumerState<MarketplacePage> {
         "active": true
       },
       {
+        "id": "jouet_03",
         "name": "Corde Tressée Multi-Nœuds",
         "description": "Corde en coton naturel tressé résistant, parfaite pour le tir à la corde et le nettoyage naturel des dents.",
         "price": 11.90,
@@ -171,6 +193,7 @@ class _MarketplacePageState extends ConsumerState<MarketplacePage> {
         "active": true
       },
       {
+        "id": "jouet_04",
         "name": "Jouet Distributeur de Friandises",
         "description": "Jouet interactif intelligent qui stimule l'instinct de recherche et distribue des récompenses progressivement.",
         "price": 19.90,
@@ -181,6 +204,7 @@ class _MarketplacePageState extends ConsumerState<MarketplacePage> {
         "active": true
       },
       {
+        "id": "jouet_05",
         "name": "Frisbee Souple Ultra-Léger",
         "description": "Disque volant en silicone souple, doux pour les gencives et ultra-visible grâce à ses couleurs vives.",
         "price": 12.50,
@@ -193,6 +217,7 @@ class _MarketplacePageState extends ConsumerState<MarketplacePage> {
 
       // ───────── NICHE & COUCHAGE (6 produits) ─────────
       {
+        "id": "couch_01",
         "name": "Niche Artisanale en Bois Noble",
         "description": "Finitions artisanales en bois massif traité, isolation thermique naturelle et toit amovible pour un entretien facile.",
         "price": 129.00,
@@ -203,6 +228,7 @@ class _MarketplacePageState extends ConsumerState<MarketplacePage> {
         "active": true
       },
       {
+        "id": "couch_02",
         "name": "Coussin Ovale Velours Premium",
         "description": "Coussin moelleux en velours lavable avec mousse à mémoire de forme, soutien orthopédique pour un repos optimal.",
         "price": 49.90,
@@ -213,6 +239,7 @@ class _MarketplacePageState extends ConsumerState<MarketplacePage> {
         "active": true
       },
       {
+        "id": "couch_03",
         "name": "Panier Design Scandinave",
         "description": "Panier en feutre écologique aux lignes épurées, structure auto-portante et fond déhoussable lavable en machine.",
         "price": 59.00,
@@ -223,6 +250,7 @@ class _MarketplacePageState extends ConsumerState<MarketplacePage> {
         "active": true
       },
       {
+        "id": "couch_04",
         "name": "Lit Surélevé Respirant",
         "description": "Structure en aluminium léger avec toile mesh respirante, idéal pour l'été et les animaux souffrant d'arthrose.",
         "price": 44.50,
@@ -233,6 +261,7 @@ class _MarketplacePageState extends ConsumerState<MarketplacePage> {
         "active": true
       },
       {
+        "id": "couch_05",
         "name": "Maisonnette Chat Cocooning",
         "description": "Cabane fermée en peluche douce avec ouverture arrondie, refuge idéal pour les siestes et moments de tranquillité.",
         "price": 39.90,
@@ -243,6 +272,7 @@ class _MarketplacePageState extends ConsumerState<MarketplacePage> {
         "active": true
       },
       {
+        "id": "couch_06",
         "name": "Matelas Orthopédique Grande Taille",
         "description": "Matelas XL en mousse haute densité avec housse imperméable et antidérapante, conçu pour les grandes races.",
         "price": 79.00,
@@ -255,6 +285,7 @@ class _MarketplacePageState extends ConsumerState<MarketplacePage> {
 
       // ───────── HYGIÈNE & SOINS (5 produits) ─────────
       {
+        "id": "hyg_01",
         "name": "Shampoing Doux & Lingettes Soin",
         "description": "Formule hypoallergénique aux extraits d'aloe vera et d'avoine bio, pour un pelage soyeux et une peau apaisée.",
         "price": 19.90,
@@ -265,6 +296,7 @@ class _MarketplacePageState extends ConsumerState<MarketplacePage> {
         "active": true
       },
       {
+        "id": "hyg_02",
         "name": "Brosse Démêlante Ergonomique",
         "description": "Brosse à picots souples en acier inoxydable avec manche antidérapant, retire les nœuds sans tirer le poil.",
         "price": 16.50,
@@ -275,6 +307,7 @@ class _MarketplacePageState extends ConsumerState<MarketplacePage> {
         "active": true
       },
       {
+        "id": "hyg_03",
         "name": "Spray Nettoyant Oreilles",
         "description": "Solution auriculaire douce à la camomille et calendula, prévient les infections et dissout le cérumen en douceur.",
         "price": 12.90,
@@ -285,6 +318,7 @@ class _MarketplacePageState extends ConsumerState<MarketplacePage> {
         "active": true
       },
       {
+        "id": "hyg_04",
         "name": "Kit Coupe-Griffes Professionnel",
         "description": "Coupe-griffes en acier chirurgical avec butée de sécurité et lime intégrée, adapté à toutes les tailles d'animaux.",
         "price": 14.90,
@@ -295,6 +329,7 @@ class _MarketplacePageState extends ConsumerState<MarketplacePage> {
         "active": true
       },
       {
+        "id": "hyg_05",
         "name": "Dentifrice Enzymatique Menthe",
         "description": "Gel dentaire sans rinçage aux enzymes actives et menthe fraîche, prévient le tartre et les maladies parodontales.",
         "price": 11.50,
@@ -307,6 +342,7 @@ class _MarketplacePageState extends ConsumerState<MarketplacePage> {
 
       // ───────── ACCESSOIRES (5 produits) ─────────
       {
+        "id": "access_01",
         "name": "Ensemble Laisse Cuir & Harnais Réfléchissant",
         "description": "Surpiqûres sellier, mousqueton en laiton brossé et inserts réfléchissants pour des promenades sûres et élégantes.",
         "price": 28.50,
@@ -317,6 +353,7 @@ class _MarketplacePageState extends ConsumerState<MarketplacePage> {
         "active": true
       },
       {
+        "id": "access_02",
         "name": "Gamelle Double Inox Anti-Dérapante",
         "description": "Double gamelle en acier inoxydable alimentaire sur support antidérapant en silicone, eau et nourriture séparées.",
         "price": 22.90,
@@ -327,6 +364,7 @@ class _MarketplacePageState extends ConsumerState<MarketplacePage> {
         "active": true
       },
       {
+        "id": "access_03",
         "name": "Médaille Gravée Personnalisable",
         "description": "Médaille en alliage poli brillant, gravure laser recto-verso offerte, anneau renforcé anti-perte pour collier.",
         "price": 9.90,
@@ -337,6 +375,7 @@ class _MarketplacePageState extends ConsumerState<MarketplacePage> {
         "active": true
       },
       {
+        "id": "access_04",
         "name": "Bandana Chic Coton Bio",
         "description": "Bandana artisanal en coton bio certifié, motifs exclusifs et attache réglable, parfait pour les sorties mode.",
         "price": 13.50,
@@ -347,6 +386,7 @@ class _MarketplacePageState extends ConsumerState<MarketplacePage> {
         "active": true
       },
       {
+        "id": "access_05",
         "name": "Fontaine à Eau Silencieuse 2L",
         "description": "Fontaine avec filtre charbon actif et pompe ultra-silencieuse, encourage l'hydratation grâce à l'eau en mouvement.",
         "price": 34.90,
@@ -359,6 +399,7 @@ class _MarketplacePageState extends ConsumerState<MarketplacePage> {
 
       // ───────── TRANSPORT (1 produit) ─────────
       {
+        "id": "trans_01",
         "name": "Sac de Voyage Confort Première Classe",
         "description": "Structure renforcée respirante avec ouverture panoramique et fond rembourré amovible pour des trajets sereins.",
         "price": 54.00,
@@ -595,14 +636,17 @@ class _MarketplacePageState extends ConsumerState<MarketplacePage> {
                 final uniqueProducts = products.where((p) => seen.add(p.id)).toList();
 
                 // Filtrage dynamique selon la catégorie sélectionnée
+                // Normalise les deux côtés (accents, espaces, underscores, casse)
+                // pour que "Hygiène & Soins" corresponde à HYGIENE_SOINS, etc.
                 final filteredProducts = selectedCategory == 'ALL'
                     ? uniqueProducts
                     : uniqueProducts.where((p) {
                         if (p.category == null) return false;
-                        final cat = p.category!.toUpperCase();
-                        return cat == selectedCategory ||
-                            cat.contains(selectedCategory) ||
-                            selectedCategory.contains(cat);
+                        final cat = _normalizeCategory(p.category);
+                        final sel = _normalizeCategory(selectedCategory);
+                        return cat == sel ||
+                            cat.contains(sel) ||
+                            sel.contains(cat);
                       }).toList();
 
                 if (filteredProducts.isEmpty) {
@@ -661,4 +705,28 @@ class _MarketplacePageState extends ConsumerState<MarketplacePage> {
       ),
     );
   }
+}
+
+/// Normalise un nom de catégorie pour la comparaison :
+/// supprime les accents, remplace espaces/& par _, met en majuscule,
+/// retire les caractères spéciaux.
+/// Permet de faire correspondre "Hygiène & Soins" (affiché) avec HYGIENE_SOINS (backend).
+String _normalizeCategory(String? category) {
+  if (category == null || category.isEmpty) return '';
+  return category
+      .toUpperCase()
+      .replaceAll('É', 'E')
+      .replaceAll('È', 'E')
+      .replaceAll('Ê', 'E')
+      .replaceAll('Ë', 'E')
+      .replaceAll('À', 'A')
+      .replaceAll('Â', 'A')
+      .replaceAll('Ç', 'C')
+      .replaceAll('Ô', 'O')
+      .replaceAll('Ù', 'U')
+      .replaceAll('Ü', 'U')
+      .replaceAll(' ', '_')
+      .replaceAll('&', '')
+      .replaceAll('-', '_')
+      .replaceAll(RegExp(r'[^A-Z_]'), '');
 }

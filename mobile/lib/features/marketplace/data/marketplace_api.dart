@@ -9,9 +9,11 @@ class MarketplaceApi {
   MarketplaceApi(this._dio);
   final Dio _dio;
 
-  /// Récupère la liste des produits.
-  Future<List<Product>> list() async {
-    final response = await _dio.get('/products');
+  /// Récupère la liste des produits, optionnellement filtrés par catégorie.
+  Future<List<Product>> list({String? category}) async {
+    final response = await _dio.get('/products', queryParameters: {
+      if (category != null && category != 'ALL') 'category': category,
+    });
     final content = response.data['data']['content'] as List<dynamic>;
     return content.map((e) => Product.fromJson(e as Map<String, dynamic>)).toList();
   }
@@ -79,6 +81,48 @@ class MarketplaceApi {
     final response = await _dio.post('/orders', data: body);
     final data = response.data['data'] ?? response.data;
     return Order.fromJson(data as Map<String, dynamic>);
+  }
+
+  /// Purge et recrée les 10 produits ALIMENTATION (admin).
+  Future<int> reseedAlimentation() async {
+    final response = await _dio.post('/products/reseed/alimentation');
+    return response.data['data'] as int;
+  }
+
+  /// Purge et recrée les 5 produits JOUETS (admin).
+  Future<int> reseedJouets() async {
+    final response = await _dio.post('/products/reseed/jouets');
+    return response.data['data'] as int;
+  }
+
+  /// Purge et recrée les 6 produits NICHE & COUCHAGE (admin).
+  Future<int> reseedNicheCouchage() async {
+    final response = await _dio.post('/products/reseed/niche-couchage');
+    return response.data['data'] as int;
+  }
+
+  /// Purge et recrée les 5 produits HYGIÈNE & SOINS (admin).
+  Future<int> reseedHygieneSoins() async {
+    final response = await _dio.post('/products/reseed/hygiene-soins');
+    return response.data['data'] as int;
+  }
+
+  /// Purge et recrée les 5 produits ACCESSOIRES (admin).
+  Future<int> reseedAccessoires() async {
+    final response = await _dio.post('/products/reseed/accessoires');
+    return response.data['data'] as int;
+  }
+
+  /// Purge et recrée le produit TRANSPORT (admin).
+  Future<int> reseedTransport() async {
+    final response = await _dio.post('/products/reseed/transport');
+    return response.data['data'] as int;
+  }
+
+  /// Purge et recrée tous les 32 produits de toutes les catégories (admin).
+  Future<int> reseedAll() async {
+    final response = await _dio.post('/products/reseed/all');
+    return response.data['data'] as int;
   }
 
   /// Récupère l'historique des commandes de l'utilisateur (GET /orders).

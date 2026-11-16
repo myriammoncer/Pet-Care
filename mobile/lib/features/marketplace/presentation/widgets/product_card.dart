@@ -132,6 +132,7 @@ class ProductCard extends ConsumerWidget {
 
                 // ─── Prix & Bouton Ajout rapide ───
                 Row(
+                  mainAxisSize: MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
@@ -146,6 +147,8 @@ class ProductCard extends ConsumerWidget {
                             color: theme.colorScheme.primary,
                             letterSpacing: -0.3,
                           ),
+                          overflow: TextOverflow.ellipsis,
+                          softWrap: false,
                         ),
                       ],
                     ),
@@ -160,10 +163,22 @@ class ProductCard extends ConsumerWidget {
                         onTap: isOutOfStock
                             ? null
                             : () async {
-                                await ref
+                                final success = await ref
                                     .read(cartProvider.notifier)
                                     .addItem(product.id, 1);
-                                if (context.mounted) {
+                                if (!context.mounted) return;
+
+                                if (!success) {
+                                  ScaffoldMessenger.of(context)
+                                      .showSnackBar(const SnackBar(
+                                    content: Text(
+                                      'Impossible d\'ajouter au panier. '
+                                      'Veuillez vous connecter.',
+                                      style: TextStyle(fontSize: 13),
+                                    ),
+                                    backgroundColor: Color(0xFFEF4444),
+                                  ));
+                                } else {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
                                       behavior: SnackBarBehavior.floating,

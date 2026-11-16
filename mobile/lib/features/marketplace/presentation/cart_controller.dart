@@ -9,7 +9,13 @@ final cartProvider = AsyncNotifierProvider<CartNotifier, Cart>(CartNotifier.new)
 class CartNotifier extends AsyncNotifier<Cart> {
   @override
   Future<Cart> build() async {
-    return ref.watch(marketplaceApiProvider).getCart();
+    try {
+      return await ref.read(marketplaceApiProvider).getCart();
+    } catch (_) {
+      // Si le panier n'est pas disponible (non authentifié, serveur hors ligne, etc.),
+      // on retourne un panier vide pour ne pas faire planter la page d'accueil.
+      return const Cart();
+    }
   }
 
   /// Rafraîchit le panier.
@@ -19,7 +25,8 @@ class CartNotifier extends AsyncNotifier<Cart> {
   }
 
   /// Ajoute un produit au panier.
-  Future<void> addItem(String productId, int quantity) async {
+  /// Retourne true en cas de succès, false en cas d'erreur.
+  Future<bool> addItem(String productId, int quantity) async {
     final previousState = state.value;
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
@@ -28,7 +35,9 @@ class CartNotifier extends AsyncNotifier<Cart> {
     });
     if (state.hasError && previousState != null) {
       state = AsyncValue.data(previousState);
+      return false;
     }
+    return true;
   }
 
   /// Modifie la quantité d'un article du panier.

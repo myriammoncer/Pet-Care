@@ -63,4 +63,53 @@ public class ProductController {
         productService.delete(id);
         return ResponseEntity.noContent().build();
     }
+
+    @PostMapping("/reseed/alimentation")
+    @Operation(summary = "Purger et recréer les 10 produits ALIMENTATION (admin)")
+    public ApiResponse<Integer> reseedAlimentation() {
+        int count = productService.reseedAlimentation();
+        return ApiResponse.ok(count);
+    }
+
+    @PostMapping("/reseed/jouets")
+    @Operation(summary = "Purger et recréer les 5 produits JOUETS (admin)")
+    public ApiResponse<Integer> reseedJouets() {
+        int count = productService.reseedJouets();
+        return ApiResponse.ok(count);
+    }
+
+    @PostMapping("/reseed/niche-couchage")
+    @Operation(summary = "Purger et recréer les 6 produits NICHE & COUCHAGE (admin)")
+    public ApiResponse<Integer> reseedNicheCouchage() {
+        int count = productService.reseedNicheCouchage();
+        return ApiResponse.ok(count);
+    }
+
+    @PostMapping("/reseed/hygiene-soins")
+    @Operation(summary = "Purger et recréer les 5 produits HYGIÈNE & SOINS (admin)")
+    public ApiResponse<Integer> reseedHygieneSoins() {
+        int count = productService.reseedHygieneSoins();
+        return ApiResponse.ok(count);
+    }
+
+    @PostMapping("/reseed/accessoires")
+    @Operation(summary = "Purger et recréer les 5 produits ACCESSOIRES (admin)")
+    public ApiResponse<Integer> reseedAccessoires() {
+        int count = productService.reseedAccessoires();
+        return ApiResponse.ok(count);
+    }
+
+    @PostMapping("/reseed/transport")
+    @Operation(summary = "Purger et recréer le produit TRANSPORT (admin)")
+    public ApiResponse<Integer> reseedTransport() {
+        int count = productService.reseedTransport();
+        return ApiResponse.ok(count);
+    }
+
+    @PostMapping("/reseed/all")
+    @Operation(summary = "Purger et recréer tous les 32 produits de toutes les catégories (admin)")
+    public ApiResponse<Integer> reseedAll() {
+        int count = productService.reseedAll();
+        return ApiResponse.ok(count);
+    }
 }
