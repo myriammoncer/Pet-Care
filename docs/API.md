@@ -163,13 +163,16 @@ Champs obligatoires : `petId` (animal existant), `type`, `title`, `scheduledAt`.
 
 | Méthode | Route | Rôle | Description |
 |---------|-------|------|-------------|
-| GET | `/events` | authentifié | Événements à venir (filtres : `type`, `from`, `to`). |
+| GET | `/events` | authentifié | Événements à venir par défaut, triés par date (filtres : `type`, `from`, `to` en ISO-8601). Chaque événement indique `registered` / `myPetId` pour l'utilisateur courant. |
+| GET | `/events/me` | authentifié | Mes inscriptions (à venir puis passées). |
 | GET | `/events/{id}` | authentifié | Détail. |
-| POST | `/events` | ADMIN | Créer un événement. |
-| PUT | `/events/{id}` | ADMIN | Modifier. |
+| POST | `/events` | ADMIN | Créer un événement (début dans le futur, `endAt` > `startAt`). |
+| PUT | `/events/{id}` | ADMIN | Modifier (capacité ≥ nombre d'inscrits). |
 | DELETE | `/events/{id}` | ADMIN | Supprimer. |
-| POST | `/events/{id}/register` | authentifié | S'inscrire (avec `petId`). |
-| DELETE | `/events/{id}/register` | authentifié | Se désinscrire. |
+| POST | `/events/{id}/register` | authentifié | S'inscrire avec **un de ses animaux** (`{ "petId": "…" }`). 409 si déjà inscrit, complet ou commencé ; 403 si l'animal n'est pas à lui. |
+| DELETE | `/events/{id}/register` | authentifié | Se désinscrire (409 si non inscrit ou événement commencé). |
+| GET | `/events/{id}/participants` | ADMIN | Liste des participants (nom, email, animal, date d'inscription). |
+| DELETE | `/events/{id}/participants/{userId}` | ADMIN | Retirer un participant. |
 
 ---
 
