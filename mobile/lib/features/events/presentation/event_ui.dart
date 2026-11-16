@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 import '../data/event_failure.dart';
 import '../domain/pet_event.dart';
@@ -42,11 +42,11 @@ const _typePill = {
 
 /// Illustration par type (photos de la maquette, dans assets/images/).
 const _typeImages = {
-  'GROUP_WALK': 'assets/images/event_walk.png',
-  'BEAUTY_CONTEST': 'assets/images/event_contest.png',
-  'HEALTH_DAY': 'assets/images/event_health.png',
-  'ADOPTION': 'assets/images/event_adoption.png',
-  'TRAINING_WORKSHOP': 'assets/images/event_workshop.png',
+  'GROUP_WALK': 'assets/images/event_walk.jpg',
+  'BEAUTY_CONTEST': 'assets/images/event_contest.jpg',
+  'HEALTH_DAY': 'assets/images/event_health.jpg',
+  'ADOPTION': 'assets/images/event_adoption.jpg',
+  'TRAINING_WORKSHOP': 'assets/images/event_workshop.jpg',
 };
 
 IconData eventTypeIcon(String type) => _typeIcons[type] ?? Icons.celebration_outlined;
@@ -58,7 +58,7 @@ Color eventTypeBackground(String type) => (_typePill[type] ?? (EventsColors.mint
 
 String eventTypeLabel(String type) => eventTypeLabels[type] ?? type;
 
-String eventTypeImage(String type) => _typeImages[type] ?? 'assets/images/event_walk.png';
+String eventTypeImage(String type) => _typeImages[type] ?? 'assets/images/event_walk.jpg';
 
 const _jours = ['lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.', 'dim.'];
 const _joursLongs = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];

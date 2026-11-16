@@ -1,4 +1,4 @@
-# 👥 Répartition de l'équipe — Pet-Care (6 personnes)
+﻿# 👥 Répartition de l'équipe — Pet-Care (6 personnes)
 
 L'architecture est pensée pour être **découpée en 6 tranches verticales autonomes** :
 **1 personne = 1 module = backend + mobile + doc**. Chacun peut avancer en
@@ -40,7 +40,7 @@ MongoDB, repository, service, controller, DTO côté backend **et** la feature
 | 3 | _(à nommer)_ | **Dossier médical** | `medicalrecord/` | `medical_record/` |
 | 4 | _(à nommer)_ | **Marketplace** | `marketplace/` | `marketplace/` |
 | 5 | _(à nommer)_ | **Agenda** | `agenda/` | `agenda/` |
-| 6 | _(à nommer)_ | **Événements** | `event/` | `events/` |
+| 6 | Ahmed Zekri | **Événements** | `event/` | `events/` |
 
 ---
 
@@ -75,7 +75,7 @@ MongoDB, repository, service, controller, DTO côté backend **et** la feature
 
 ### 🎉 Personne 6 — Événements
 - ✅ CRUD événements (admin) + inscription/désinscription (backend) ; mobile : liste.
-- 🔧 Écran **inscription** mobile (API prête), détail d'événement, gestion admin mobile.
+- ✅ Mobile : écran Événements (maquette Figma), détail, inscription avec son animal, mes inscriptions, gestion admin.
 - **Dépend de** : User, Pets.
 
 ---
