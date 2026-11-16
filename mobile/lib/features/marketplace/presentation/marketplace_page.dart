@@ -398,10 +398,10 @@ class _MarketplacePageState extends ConsumerState<MarketplacePage> {
         }
         if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             behavior: SnackBarBehavior.floating,
-            content: Text('✅ Les produits sont déjà dans le catalogue.'),
-            backgroundColor: Color(0xFF1F7A46),
+            content: const Text('✅ Les produits sont déjà dans le catalogue.'),
+            backgroundColor: Theme.of(context).colorScheme.primary,
           ),
         );
         return;
@@ -419,10 +419,10 @@ class _MarketplacePageState extends ConsumerState<MarketplacePage> {
 
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           behavior: SnackBarBehavior.floating,
-          content: Text('✨ Catalogue enrichi avec les produits de luxe locaux !'),
-          backgroundColor: Color(0xFF1F7A46),
+          content: const Text('✨ Catalogue enrichi avec les produits de luxe locaux !'),
+          backgroundColor: Theme.of(context).colorScheme.primary,
         ),
       );
     } catch (e) {
@@ -504,7 +504,7 @@ class _MarketplacePageState extends ConsumerState<MarketplacePage> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _injectMagicProducts(context),
-        backgroundColor: const Color(0xFF1F7A46),
+        backgroundColor: theme.colorScheme.primary,
         foregroundColor: Colors.white,
         elevation: 4,
         icon: const Icon(Icons.auto_fix_high, size: 18),
