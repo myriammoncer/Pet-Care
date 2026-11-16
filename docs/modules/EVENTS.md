@@ -48,10 +48,15 @@ DELETE /events/{id}/participants/{uid}  retirer un participant (ADMIN)
 | `domain/pet_event.dart` | Entités `PetEvent` (+ `canRegister`, `canUnregister`, `remainingSpots`) et `EventParticipant` |
 | `data/events_api.dart` | Appels REST (dio) ; erreurs converties en `Failure` avec le message du backend |
 | `presentation/events_controller.dart` | Providers Riverpod (`autoDispose` : rien en cache après déconnexion) + `EventsActions` |
-| `presentation/events_page.dart` | Onglets **À venir** (filtres par type, tirer pour rafraîchir) / **Mes inscriptions** (à venir + passés) ; bouton « Créer » pour l'admin |
+| `presentation/events_page.dart` | Écran **Événements & Communauté** (maquette Figma) : filtres par type, événement « À la une », « Prochains rendez-vous » avec inscription directe ; bouton « Proposer une sortie ou un événement » pour l'admin |
+| `presentation/my_events_page.dart` | Mes inscriptions (à venir + passés), ouvert depuis « Mes inscriptions » |
 | `presentation/event_detail_page.dart` | Détail, jauge de places, inscription avec choix de l'animal, désinscription ; admin : modifier, supprimer, liste et retrait des participants |
 | `presentation/event_form_page.dart` | Formulaire admin créer / modifier (dates début/fin, capacité ≥ inscrits) |
-| `presentation/event_ui.dart` | Libellés, icônes, couleurs par type, formats de date FR, widgets partagés |
+| `presentation/event_registration.dart` | Choix de l'animal + inscription, partagé par la liste et le détail |
+| `presentation/events_colors.dart` | Palette de la maquette, propre au module |
+| `presentation/event_ui.dart` | Libellés, icônes, couleurs et photos par type, formats de date FR, widgets partagés |
+
+Photos par type d'événement : `assets/images/event_*.png` (issues de la maquette ; dossier déjà déclaré dans `pubspec.yaml`, aucune modification du socle).
 
 Navigation interne au module via `Navigator.push` : **aucune modification du routeur commun**.
 

@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/theme/app_tokens.dart';
 import '../../../core/widgets/async_view.dart';
 import '../../auth/presentation/auth_controller.dart';
 import '../../pets/domain/pet.dart';
 import '../../pets/presentation/pets_controller.dart';
 import '../domain/pet_event.dart';
 import 'event_form_page.dart';
+import 'event_registration.dart';
 import 'event_ui.dart';
+import 'events_colors.dart';
 import 'events_controller.dart';
 
 /// Détail d'un événement : infos, places, inscription avec un animal,
@@ -37,17 +38,9 @@ class _EventDetailPageState extends ConsumerState<EventDetailPage> {
   }
 
   Future<void> _register(PetEvent event) async {
-    final pet = await showModalBottomSheet<Pet>(
-      context: context,
-      showDragHandle: true,
-      isScrollControlled: true,
-      builder: (_) => const _PetPickerSheet(),
-    );
-    if (pet == null || !mounted) return;
-    await _run(
-      () => ref.read(eventsActionsProvider).register(event.id, pet.id),
-      'Inscription confirmée avec ${pet.name} 🎉',
-    );
+    setState(() => _busy = true);
+    await registerWithPet(context, ref, event);
+    if (mounted) setState(() => _busy = false);
   }
 
   Future<void> _unregister(PetEvent event) async {
@@ -106,7 +99,7 @@ class _EventDetailPageState extends ConsumerState<EventDetailPage> {
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Annuler')),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppTokens.danger),
+            style: FilledButton.styleFrom(backgroundColor: EventsColors.danger),
             onPressed: () => Navigator.pop(ctx, true),
             child: Text(confirmLabel),
           ),
@@ -123,10 +116,10 @@ class _EventDetailPageState extends ConsumerState<EventDetailPage> {
     final event = eventAsync.valueOrNull;
 
     return Scaffold(
-      backgroundColor: AppTokens.scaffold,
+      backgroundColor: EventsColors.background,
       appBar: AppBar(
-        backgroundColor: AppTokens.scaffold,
-        foregroundColor: AppTokens.textStrong,
+        backgroundColor: EventsColors.background,
+        foregroundColor: EventsColors.textStrong,
         elevation: 0,
         title: const Text("Détail de l'événement"),
         actions: [
@@ -160,7 +153,7 @@ class _EventDetailPageState extends ConsumerState<EventDetailPage> {
         data: (e) => RefreshIndicator(
           onRefresh: () => ref.refresh(eventDetailProvider(widget.eventId).future),
           child: ListView(
-            padding: const EdgeInsets.all(AppTokens.gap),
+            padding: const EdgeInsets.all(EventsColors.gap),
             children: [
               _Header(event: e),
               const SizedBox(height: 12),
@@ -191,30 +184,46 @@ class _Header extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: AppTokens.cardDecoration,
-      padding: const EdgeInsets.all(AppTokens.gap),
+      decoration: EventsColors.cardDecoration,
+      clipBehavior: Clip.antiAlias,
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          EventTypeBadge(event.type),
-          const SizedBox(height: 10),
-          Text(
-            event.title,
-            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AppTokens.textStrong),
+          SizedBox(
+            height: 180,
+            child: Image.asset(eventTypeImage(event.type), fit: BoxFit.cover),
           ),
-          const SizedBox(height: 12),
-          _InfoRow(icon: Icons.calendar_today_outlined, text: formatEventWhen(event)),
-          const SizedBox(height: 8),
-          _InfoRow(icon: Icons.place_outlined, text: event.location),
-          const SizedBox(height: 14),
-          CapacityBar(event),
-          if (event.hasStarted()) ...[
-            const SizedBox(height: 10),
-            const Text(
-              'Cet événement a commencé ou est terminé : inscriptions closes.',
-              style: TextStyle(color: AppTokens.textMuted, fontStyle: FontStyle.italic),
+          Padding(
+            padding: const EdgeInsets.all(EventsColors.gap),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                EventTypeBadge(event.type),
+                const SizedBox(height: 10),
+                Text(
+                  event.title,
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    color: EventsColors.textStrong,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _InfoRow(icon: Icons.calendar_today_outlined, text: formatEventWhen(event)),
+                const SizedBox(height: 8),
+                _InfoRow(icon: Icons.place_outlined, text: event.location),
+                const SizedBox(height: 14),
+                CapacityBar(event),
+                if (event.hasStarted()) ...[
+                  const SizedBox(height: 10),
+                  const Text(
+                    'Cet événement a commencé ou est terminé : inscriptions closes.',
+                    style: TextStyle(color: EventsColors.textMuted, fontStyle: FontStyle.italic),
+                  ),
+                ],
+              ],
             ),
-          ],
+          ),
         ],
       ),
     );
@@ -233,17 +242,17 @@ class _MyRegistrationCard extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppTokens.mint,
-        borderRadius: BorderRadius.circular(AppTokens.radius),
+        color: EventsColors.mint,
+        borderRadius: BorderRadius.circular(EventsColors.radius),
       ),
       child: Row(
         children: [
-          const Icon(Icons.check_circle, color: AppTokens.primary),
+          const Icon(Icons.check_circle, color: EventsColors.primary),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
               petName == null ? 'Vous êtes inscrit à cet événement.' : 'Vous participez avec $petName.',
-              style: const TextStyle(fontWeight: FontWeight.w600, color: AppTokens.primaryDark),
+              style: const TextStyle(fontWeight: FontWeight.w600, color: EventsColors.primaryDark),
             ),
           ),
         ],
@@ -267,11 +276,11 @@ class _ParticipantsCard extends ConsumerWidget {
           padding: EdgeInsets.symmetric(vertical: 12),
           child: LinearProgressIndicator(),
         ),
-        error: (e, _) => Text(errorText(e), style: const TextStyle(color: AppTokens.danger)),
+        error: (e, _) => Text(errorText(e), style: const TextStyle(color: EventsColors.danger)),
         data: (participants) {
           if (participants.isEmpty) {
             return const Text('Aucun inscrit pour le moment.',
-                style: TextStyle(color: AppTokens.textMuted));
+                style: TextStyle(color: EventsColors.textMuted));
           }
           return Column(
             children: [
@@ -279,8 +288,8 @@ class _ParticipantsCard extends ConsumerWidget {
                 ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: const CircleAvatar(
-                    backgroundColor: AppTokens.mint,
-                    child: Icon(Icons.person, color: AppTokens.primary),
+                    backgroundColor: EventsColors.mint,
+                    child: Icon(Icons.person, color: EventsColors.primary),
                   ),
                   title: Text(p.userName?.isNotEmpty == true ? p.userName! : (p.userEmail ?? p.userId)),
                   subtitle: Text([
@@ -289,7 +298,7 @@ class _ParticipantsCard extends ConsumerWidget {
                   ].join(' · ')),
                   trailing: IconButton(
                     tooltip: 'Retirer',
-                    icon: const Icon(Icons.person_remove_outlined, color: AppTokens.danger),
+                    icon: const Icon(Icons.person_remove_outlined, color: EventsColors.danger),
                     onPressed: () => onRemove(p),
                   ),
                 ),
@@ -321,8 +330,8 @@ class _ActionBar extends StatelessWidget {
     if (event.canUnregister) {
       button = OutlinedButton.icon(
         style: OutlinedButton.styleFrom(
-          foregroundColor: AppTokens.danger,
-          side: const BorderSide(color: AppTokens.danger),
+          foregroundColor: EventsColors.danger,
+          side: const BorderSide(color: EventsColors.danger),
           minimumSize: const Size.fromHeight(50),
         ),
         onPressed: busy ? null : onUnregister,
@@ -332,7 +341,7 @@ class _ActionBar extends StatelessWidget {
     } else if (event.canRegister) {
       button = FilledButton.icon(
         style: FilledButton.styleFrom(
-          backgroundColor: AppTokens.primary,
+          backgroundColor: EventsColors.primary,
           minimumSize: const Size.fromHeight(50),
         ),
         onPressed: busy ? null : onRegister,
@@ -362,68 +371,6 @@ class _ActionBar extends StatelessWidget {
   }
 }
 
-/// Feuille de choix de l'animal pour l'inscription.
-class _PetPickerSheet extends ConsumerWidget {
-  const _PetPickerSheet();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final petsAsync = ref.watch(petsListProvider);
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Avec quel compagnon participez-vous ?',
-              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
-            ),
-            const SizedBox(height: 12),
-            petsAsync.when(
-              loading: () => const Padding(
-                padding: EdgeInsets.all(24),
-                child: Center(child: CircularProgressIndicator()),
-              ),
-              error: (e, _) => Text(errorText(e)),
-              data: (pets) {
-                if (pets.isEmpty) {
-                  return const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 16),
-                    child: Text(
-                      "Ajoutez d'abord un animal dans l'onglet « Animaux » pour pouvoir vous inscrire.",
-                    ),
-                  );
-                }
-                return ConstrainedBox(
-                  constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.5),
-                  child: ListView(
-                    shrinkWrap: true,
-                    children: [
-                      for (final pet in pets)
-                        ListTile(
-                          leading: const CircleAvatar(
-                            backgroundColor: AppTokens.mint,
-                            child: Icon(Icons.pets, color: AppTokens.primary),
-                          ),
-                          title: Text(pet.name),
-                          subtitle: pet.breed == null ? null : Text(pet.breed!),
-                          trailing: const Icon(Icons.chevron_right),
-                          onTap: () => Navigator.pop(context, pet),
-                        ),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _Card extends StatelessWidget {
   const _Card({required this.title, required this.child});
   final String title;
@@ -433,8 +380,8 @@ class _Card extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      decoration: AppTokens.cardDecoration,
-      padding: const EdgeInsets.all(AppTokens.gap),
+      decoration: EventsColors.cardDecoration,
+      padding: const EdgeInsets.all(EventsColors.gap),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -457,7 +404,7 @@ class _InfoRow extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 18, color: AppTokens.primary),
+        Icon(icon, size: 18, color: EventsColors.primary),
         const SizedBox(width: 8),
         Expanded(child: Text(text, style: const TextStyle(fontSize: 15))),
       ],
