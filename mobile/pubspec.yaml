@@ -42,3 +42,11 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+  assets:
+    - assets/images/marketplace/alimentation/
+    - assets/images/marketplace/jouets/
+    - assets/images/marketplace/couchage/
+    - assets/images/marketplace/hygiene/
+    - assets/images/marketplace/accessoires/
+    - assets/images/marketplace/transport/

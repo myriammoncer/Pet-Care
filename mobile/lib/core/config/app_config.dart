@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart'; // Indispensable pour kIsWeb
+
 /// Configuration de l'application selon l'environnement (flavor).
 ///
 /// L'URL de base de l'API change selon la cible :
@@ -13,10 +15,14 @@ class AppConfig {
   final String apiBaseUrl;
 
   /// Environnement de développement (par défaut).
-  static const AppConfig dev = AppConfig(
+  static AppConfig get dev => AppConfig(
     flavor: 'dev',
-    // Adapter selon la plateforme de test ; 10.0.2.2 pour l'émulateur Android.
-    apiBaseUrl: 'http://10.0.2.2:8080/api/v1',
+    // Détection automatique selon la plateforme :
+    // - Web (Chrome) -> localhost
+    // - Émulateur Android -> 10.0.2.2
+    apiBaseUrl: kIsWeb
+        ? 'http://localhost:8080/api/v1'
+        : 'http://10.0.2.2:8080/api/v1',
   );
 
   /// Environnement de production.

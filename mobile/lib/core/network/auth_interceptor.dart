@@ -25,7 +25,8 @@ class AuthInterceptor extends Interceptor {
 
   @override
   Future<void> onError(DioException err, ErrorInterceptorHandler handler) async {
-    final isUnauthorized = err.response?.statusCode == 401;
+    final isUnauthorized =
+        err.response?.statusCode == 401 || err.response?.statusCode == 403;
     final alreadyRetried = err.requestOptions.extra['retried'] == true;
 
     if (isUnauthorized && !alreadyRetried) {
