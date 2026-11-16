@@ -1,0 +1,28 @@
+# .github/workflows/enforce-pr-base.yml
+#
+# Garde-fou de workflow Git Flow :
+#   - les branches `feature/*` doivent ouvrir leur PR vers `dev` ;
+#   - SEULE la branche `dev` peut ouvrir une PR vers `main`.
+#
+# Ce workflow ne se déclenche QUE pour les PR dont la cible (base) est `main`.
+# Si la branche source n'est pas `dev`, le job échoue → le check devient rouge.
+# Rends ce check OBLIGATOIRE dans la protection de branche de `main`
+# (Settings ▸ Branches ▸ Branch protection rule sur `main` ▸ Require status checks).
+
+name: Enforce PR base branch
+
+on:
+  pull_request:
+    branches: [main]   # uniquement les PR qui ciblent `main`
+
+jobs:
+  only-dev-to-main:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Seule la branche `dev` peut cibler `main`
+        if: github.head_ref != 'dev'
+        run: |
+          echo "::error::PR refusée : seule la branche 'dev' peut ouvrir une PR vers 'main'."
+          echo "Branche source détectée : '${{ github.head_ref }}'."
+          echo "➡️  Ouvre d'abord ta PR 'feature/*' vers 'dev', puis 'dev' vers 'main'."
+          exit 1

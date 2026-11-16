@@ -8,12 +8,19 @@ import 'package:flutter/material.dart';
 class AppTokens {
   AppTokens._(); // classe utilitaire : pas d'instanciation
 
-  // ─── Couleurs de marque ────────────────────────────────────────────────
-  /// Vert principal (boutons pleins, carte active, accents).
-  static const Color primary = Color(0xFF1F7A46);
+  // ─── Couleurs de marque (logo PetCare) ─────────────────────────────────
+  /// Vert menthe de la marque (boutons pleins, carte active).
+  static const Color primary = Color(0xFF2E9E6B);
 
-  /// Vert foncé (carte de rôle active, textes sur fond clair menthe).
-  static const Color primaryDark = Color(0xFF14532D);
+  /// Vert menthe foncé (états pressés, textes verts sur fond clair).
+  static const Color primaryDark = Color(0xFF237A52);
+
+  /// Corail de la marque (accent : patte du logo, liens, surlignages).
+  static const Color accent = Color(0xFFE8705A);
+  static const Color accentTint = Color(0xFFFCE9E4);
+
+  /// Ardoise de la marque (titres « PetCare », texte fort).
+  static const Color textStrong = Color(0xFF37474F);
 
   /// Fond menthe très clair : puces de statut, pastilles d'icônes, sections.
   static const Color mint = Color(0xFFE7F4EC);

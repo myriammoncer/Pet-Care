@@ -48,9 +48,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/login', builder: (_, __) => const LoginPage()),
       GoRoute(path: '/signup', builder: (_, __) => const SignupPage()),
       GoRoute(path: '/forgot-password', builder: (_, __) => const ForgotPasswordPage()),
-      GoRoute(path: '/reset-password', builder: (_, __) => const ResetPasswordPage()),
+      GoRoute(
+        path: '/reset-password',
+        builder: (_, state) =>
+            ResetPasswordPage(initialToken: state.uri.queryParameters['token']),
+      ),
 
-      // 🌟 1. Route de détail produit mise au niveau racine (Hors ShellRoute)
+      // Route de détail produit mise au niveau racine (Hors ShellRoute)
       GoRoute(
         path: '/marketplace/:id',
         parentNavigatorKey: _rootNavigatorKey,
