@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/theme/app_tokens.dart';
 import '../domain/pet_event.dart';
 import 'event_ui.dart';
+import 'events_colors.dart';
 import 'events_controller.dart';
 
 /// Formulaire admin : création ([event] == null) ou modification d'un événement.
@@ -142,17 +142,17 @@ class _EventFormPageState extends ConsumerState<EventFormPage> {
   Widget build(BuildContext context) {
     final registered = widget.event?.registeredCount ?? 0;
     return Scaffold(
-      backgroundColor: AppTokens.scaffold,
+      backgroundColor: EventsColors.background,
       appBar: AppBar(
-        backgroundColor: AppTokens.scaffold,
-        foregroundColor: AppTokens.textStrong,
+        backgroundColor: EventsColors.background,
+        foregroundColor: EventsColors.textStrong,
         elevation: 0,
         title: Text(_isEdit ? "Modifier l'événement" : 'Nouvel événement'),
       ),
       body: Form(
         key: _formKey,
         child: ListView(
-          padding: const EdgeInsets.all(AppTokens.gap),
+          padding: const EdgeInsets.all(EventsColors.gap),
           children: [
             TextFormField(
               controller: _title,
@@ -203,7 +203,7 @@ class _EventFormPageState extends ConsumerState<EventFormPage> {
             if (_dateError != null)
               Padding(
                 padding: const EdgeInsets.only(top: 4, left: 4),
-                child: Text(_dateError!, style: const TextStyle(color: AppTokens.danger, fontSize: 12)),
+                child: Text(_dateError!, style: const TextStyle(color: EventsColors.danger, fontSize: 12)),
               ),
             const SizedBox(height: 12),
             TextFormField(
@@ -236,7 +236,7 @@ class _EventFormPageState extends ConsumerState<EventFormPage> {
             const SizedBox(height: 20),
             FilledButton(
               style: FilledButton.styleFrom(
-                backgroundColor: AppTokens.primary,
+                backgroundColor: EventsColors.primary,
                 minimumSize: const Size.fromHeight(50),
               ),
               onPressed: _saving ? null : _save,
@@ -262,7 +262,7 @@ class _DateTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListTile(
       contentPadding: EdgeInsets.zero,
-      leading: const Icon(Icons.event, color: AppTokens.primary),
+      leading: const Icon(Icons.event, color: EventsColors.primary),
       title: Text(label),
       subtitle: Text(value),
       onTap: onTap,
