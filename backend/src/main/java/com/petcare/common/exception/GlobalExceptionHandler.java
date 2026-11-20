@@ -14,7 +14,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import java.util.List;
 
 /**
- * Transforme les exceptions en réponses HTTP uniformes ({@link ErrorResponse}).
+ * Transforme les exceptions en réponses HTTP uniformes ({
+ * @link ErrorResponse}).
  * Centralise la gestion d'erreurs de toute l'API.
  */
 @RestControllerAdvice
@@ -52,6 +53,9 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleGeneric(Exception ex, HttpServletRequest req) {
+        // 🔴 Affiche la trace complète de l'erreur en rouge dans la console IntelliJ
+        ex.printStackTrace();
+
         return build(HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_ERROR",
                 "An unexpected error occurred", req);
     }
