@@ -20,13 +20,13 @@ class AppConfig {
     apiBaseUrl: 'https://api.petcare.app/api/v1',
   );
 
-  static String _devBaseUrl() {
+ static String _devBaseUrl() {
     const port = 8080;
     // Web (Chrome) : on vise localhost.
     if (kIsWeb) return 'http://localhost:$port/api/v1';
-    // Émulateur Android : 10.0.2.2 pointe vers la machine hôte.
+    // Téléphone Android physique (via adb reverse) : localhost.
     if (defaultTargetPlatform == TargetPlatform.android) {
-      return 'http://10.0.2.2:$port/api/v1';
+      return 'http://localhost:$port/api/v1';
     }
     // iOS / desktop : localhost.
     return 'http://localhost:$port/api/v1';

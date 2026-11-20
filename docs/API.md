@@ -126,6 +126,34 @@ Champs obligatoires : `petId` (animal existant), `type`, `title`, `scheduledAt`.
 | POST | `/pets/{petId}/medical-record/medications` | VET | Ajouter un médicament. |
 | DELETE | `/pets/{petId}/medical-record/{section}/{itemId}` | VET | Retirer un élément. |
 
+Les créations attendent les champs suivants (les dates sont au format ISO-8601) :
+
+```json
+{ "date": "2026-11-20T14:30:00Z", "reason": "Contrôle", "diagnosis": "RAS", "notes": "Repos conseillé" }
+```
+Exemple pour `POST .../consultations`.
+
+```json
+{ "vaccineName": "Rappel annuel", "date": "2026-11-20", "nextDueDate": "2027-11-20" }
+```
+Exemple pour `POST .../vaccinations`.
+
+```json
+{ "substance": "Pollen", "severity": "MEDIUM", "reaction": "Démangeaisons", "notes": "" }
+```
+Exemple pour `POST .../allergies`.
+
+```json
+{ "name": "Traitement", "dosage": "5 mg", "frequency": "1 fois par jour",
+  "startDate": "2026-11-20", "endDate": "2026-11-27" }
+```
+Exemple pour `POST .../medications`.
+
+Les champs requis sont `date` et `reason` pour une consultation, `vaccineName` et
+`date` pour une vaccination, `substance` et `severity` pour une allergie, puis
+`name`, `dosage` et `startDate` pour un médicament. Une suppression réussie
+renvoie `204`; un dossier ou un élément absent renvoie `404`.
+
 ---
 
 ## Module `marketplace`

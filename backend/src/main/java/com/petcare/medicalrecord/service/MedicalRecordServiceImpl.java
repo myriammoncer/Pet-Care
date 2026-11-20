@@ -72,12 +72,15 @@ public class MedicalRecordServiceImpl implements MedicalRecordService {
     public MedicalRecord removeItem(String petId, String section, String itemId) {
         MedicalRecord record = repository.findByPetId(petId)
                 .orElseThrow(() -> new ResourceNotFoundException("MedicalRecord for pet", petId));
-        switch (section) {
+        boolean removed = switch (section) {
             case "consultations" -> record.getConsultations().removeIf(c -> c.getId().equals(itemId));
             case "vaccinations" -> record.getVaccinations().removeIf(v -> v.getId().equals(itemId));
             case "allergies" -> record.getAllergies().removeIf(a -> a.getId().equals(itemId));
             case "medications" -> record.getMedications().removeIf(m -> m.getId().equals(itemId));
             default -> throw new ResourceNotFoundException("Unknown medical record section: " + section);
+        };
+        if (!removed) {
+            throw new ResourceNotFoundException("MedicalRecord item", section + "/" + itemId);
         }
         return repository.save(record);
     }
